@@ -91,6 +91,9 @@ class BackupManager(QObject):
         self.logger = logger
         self._stats = BackupStats()
 
+        # 内存缓存备份信息（用于 restore/delete 操作，不依赖数据库）
+        self._backup_cache: Dict[str, BackupInfo] = {}
+
         # 确保备份目录存在
         os.makedirs(self.backup_root, exist_ok=True)
         os.makedirs(os.path.join(self.backup_root, 'hardlinks'), exist_ok=True)
@@ -147,7 +150,8 @@ class BackupManager(QObject):
             # 创建备份记录
             backup_info = BackupInfo.create(item, backup_path, BackupType.HARDLINK)
 
-            # 保存到数据库
+            # 保存到缓存和数据库
+            self._backup_cache[backup_info.backup_id] = backup_info
             self._save_backup_to_db(backup_info)
 
             self._stats.hardlink_backups += 1
@@ -204,7 +208,8 @@ class BackupManager(QObject):
             # 创建备份记录
             backup_info = BackupInfo.create(item, backup_path, BackupType.FULL)
 
-            # 保存到数据库
+            # 保存到缓存和数据库
+            self._backup_cache[backup_info.backup_id] = backup_info
             self._save_backup_to_db(backup_info)
 
             self._stats.full_backups += 1
@@ -275,8 +280,12 @@ class BackupManager(QObject):
         Returns:
             是否成功
         """
-        # 从数据库获取备份信息
-        backup_info = self._get_backup_info(backup_id)
+        # 优先从缓存获取备份信息
+        backup_info = self._backup_cache.get(backup_id)
+        if not backup_info:
+            # 回退到数据库查询
+            backup_info = self._get_backup_info(backup_id)
+
         if not backup_info:
             self.logger.error(f"[BACKUP] 备份不存在: {backup_id}")
             return False
@@ -286,8 +295,18 @@ class BackupManager(QObject):
                 self.logger.error(f"[BACKUP] 备份文件不存在: {backup_info.backup_path}")
                 return False
 
-            # 确定目标路径
-            target_path = destination or self._get_original_path(backup_id)
+            # 确定目标路径（优先使用 BackupInfo 中的 original_path）
+            if destination:
+                target_path = destination
+            elif backup_info.original_path:
+                target_path = backup_info.original_path
+            else:
+                # 回退到数据库查询
+                target_path = self._get_original_path(backup_id)
+                if not target_path:
+                    self.logger.error(f"[BACKUP] 无法确定恢复路径: {backup_id}")
+                    return False
+
             parent_dir = os.path.dirname(target_path)
             os.makedirs(parent_dir, exist_ok=True)
 
@@ -333,6 +352,10 @@ class BackupManager(QObject):
                     os.remove(backup_info.backup_path)
                 else:
                     shutil.rmtree(backup_info.backup_path)
+
+            # 从缓存中移除
+            if backup_id in self._backup_cache:
+                del self._backup_cache[backup_id]
 
             self.logger.info(f"[BACKUP] 备份已删除: {backup_id}")
             self.backup_deleted.emit(backup_id)
@@ -418,6 +441,10 @@ class BackupManager(QObject):
         Returns:
             BackupInfo
         """
+        # 优先从缓存中查询
+        if backup_id in self._backup_cache:
+            return self._backup_cache[backup_id]
+
         # 从 recovery_log 表查询
         try:
             conn = self.db._get_connection()
@@ -431,7 +458,7 @@ class BackupManager(QObject):
             conn.close()
 
             if row:
-                return BackupInfo(
+                backup_info = BackupInfo(
                     backup_id=row['id'],
                     item_id=row['item_id'],
                     backup_path=row['backup_path'],
@@ -439,6 +466,9 @@ class BackupManager(QObject):
                     created_at=datetime.fromisoformat(row['timestamp']),
                     restored=bool(row['restored'])
                 )
+                # 也添加到缓存
+                self._backup_cache[backup_id] = backup_info
+                return backup_info
         except Exception as e:
             self.logger.error(f"[BACKUP] 查询备份信息失败: {e}")
 

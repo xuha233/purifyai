@@ -522,6 +522,7 @@ class BackupInfo:
     Attributes:
         backup_id: 备份ID
         item_id: 清理项ID
+        original_path: 原始路径（用于恢复）
         backup_path: 备份路径
         backup_type: 备份类型
         created_at: 创建时间
@@ -530,6 +531,7 @@ class BackupInfo:
     """
     backup_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     item_id: int = 0
+    original_path: str = ""
     backup_path: str = ""
     backup_type: BackupType = BackupType.NONE
     created_at: datetime = field(default_factory=datetime.now)
@@ -542,6 +544,7 @@ class BackupInfo:
         """创建备份信息"""
         return cls(
             item_id=item.item_id,
+            original_path=item.path,  # 存储原始路径
             backup_path=backup_path,
             backup_type=backup_type
         )
