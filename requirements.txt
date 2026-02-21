@@ -1,0 +1,15 @@
+# PurifyAI - System Cleaner Application
+
+# Core UI Framework
+PyQt5>=5.15.0
+PyQt5-Qt5>=5.15.0
+PyQt5-sip>=12.8.0
+
+# QFluentWidgets
+qfluentwidgets>=1.0.0
+
+# System utilities
+psutil>=5.9.0
+
+# Optional: for file cleaning operations
+send2trash>=1.8.0

@@ -1,0 +1,18 @@
+{
+  "ai_url": "https://api.deepseek.com/v1/chat/completions",
+  "ai_model": "deepseek-chat",
+  "ai_key": "sk-ee20b7301f234954996ea292e0149164",
+  "ai_enabled": true,
+  "recycle": {
+    "enabled": true,
+    "folder_path": "F:/test"
+  },
+  "notification/enabled": true,
+  "system_tray/enabled": true,
+  "system_tray/minimize": true,
+  "scheduler/daily_time": "01:00",
+  "cleanup/confirm_dialog": true,
+  "developer_console/enabled": true,
+  "appdata_migration/enabled": true,
+  "system_tray/minimize_on_close": false
+}

@@ -1,0 +1,8 @@
+{
+  "startup": {
+    "enabled": false
+  },
+  "developer_console": {
+    "enabled": false
+  }
+}

@@ -1,0 +1,744 @@
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 442, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 509, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 509, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 430, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 491, in _on_ai_enabled_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\browser_cleaner.py", line 739, in on_ai_evaluate_all
+    self._evaluate_with_rules(suspicious)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\browser_cleaner.py", line 826, in _evaluate_with_rules
+    self._update_item_risk(item, 'dangerous', 'rule', '含敏感关键字')
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\browser_cleaner.py", line 1019, in _update_item_risk
+    if it.path == item.path:
+       ^^^^^^^
+AttributeError: 'QWidgetItem' object has no attribute 'path'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 430, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 430, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 430, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 50, in on_console_changed
+    self.console_callback(checked)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "G:\docker\diskclean\src\app.py", line 343, in toggle_developer_console
+    self._remove_developer_console_ui()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 207, in _remove_developer_console_ui
+    self.navigation.removeItem("developerConsole")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NavigationInterface' object has no attribute 'removeItem'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 430, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 430, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 497, in _on_ai_config_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 491, in _on_ai_enabled_changed
+    config = self.config_mgr.get_settings()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ConfigManager' object has no attribute 'get_settings'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 435, in on_tray_enabled_changed
+    tray = startup_mgr.status
+           ^^^^^^^^^^^^^^^^^^
+AttributeError: 'StartupManager' object has no attribute 'status'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 675, in <lambda>
+    self.ai_evaluate_thread.progress.connect(lambda idx: self._on_ai_custom_progress(idx, len(suspicious)))
+                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 693, in _on_ai_custom_progress
+    status = AIReviewStatus(
+        total_items=total,
+    ...<4 lines>...
+        progress_percent=int(idx / total * 100) if total > 0 else 0
+    )
+TypeError: AIReviewStatus.__init__() got an unexpected keyword argument 'completed_items'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\developer_console_window.py", line 818, in showEvent
+    self.setup_io_redirector()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\developer_console_window.py", line 482, in setup_io_redirector
+    print("[开发者控制台] 控制台输出捕获已启用")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "G:\docker\diskclean\src\ui\developer_console_window.py", line 110, in write
+    if self.original_stdout and not self.original_stdout.closed:
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'StdoutRedirector' object has no attribute 'closed'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 49, in on_console_changed
+    self.console_callback(checked)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "G:\docker\diskclean\src\app.py", line 344, in toggle_developer_console
+    self._remove_developer_console_ui()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 208, in _remove_developer_console_ui
+    self.navigation.removeItem("developerConsole")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NavigationInterface' object has no attribute 'removeItem'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\recovery_page.py", line 354, in open_system_recycle_bin
+    logging.info(f"[回收站:INFO] 已打开 Windows 系统回收站 (CLSID: {recycle_path})")
+    ^^^^^^^
+NameError: name 'logging' is not defined. Did you forget to import 'logging'?
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\recovery_page.py", line 356, in open_system_recycle_bin
+    logging.error(f"[回收站:ERROR] 打开系统回收站失败: {e}")
+    ^^^^^^^
+NameError: name 'logging' is not defined. Did you forget to import 'logging'?
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 52, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 107, in init_navigation
+    self.system_cleaner_page = SystemCleanerPage()
+                               ~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\system_cleaner.py", line 81, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\system_cleaner.py", line 203, in init_ui
+    self.ai_evaluate_btn.clicked.connect(self.on_ai_evaluate_current)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SystemCleanerPage' object has no attribute 'on_ai_evaluate_current'. Did you mean: 'on_ai_evaluate_all'?
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 52, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 109, in init_navigation
+    self.custom_cleaner_page = CustomCleanerPage()
+                               ~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 96, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 196, in init_ui
+    self.ai_scanner_evaluate_btn.clicked.connect(self.on_ai_evaluate_all)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomCleanerPage' object has no attribute 'on_ai_evaluate_all'. Did you mean: '_on_ai_evaluate_error'?
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 52, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 109, in init_navigation
+    self.custom_cleaner_page = CustomCleanerPage()
+                               ~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 96, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\custom_cleaner.py", line 196, in init_ui
+    self.ai_scanner_evaluate_btn.clicked.connect(self.on_ai_evaluate_current)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomCleanerPage' object has no attribute 'on_ai_evaluate_current'. Did you mean: '_on_ai_evaluate_error'?
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 332, in _showComboMenu
+    action = QAction(item.icon, item.text, triggered=lambda c, x=i: self._onItemClicked(x))
+                     ^^^^^^^^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 48, in icon
+    return self._icon.icon()
+           ^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'icon'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\settings.py", line 49, in on_console_changed
+    self.console_callback(checked)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "G:\docker\diskclean\src\app.py", line 347, in toggle_developer_console
+    self._remove_developer_console_ui()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 211, in _remove_developer_console_ui
+    self.navigation.removeItem("developerConsole")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NavigationInterface' object has no attribute 'removeItem'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 52, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 172, in init_navigation
+    self._init_developer_console()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 184, in _init_developer_console
+    self._add_developer_console_ui()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 189, in _add_developer_console_ui
+    self._developer_console_page = DeveloperConsolePage(self)
+                                   ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "G:\docker\diskclean\src\ui\developer_console.py", line 683, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\developer_console.py", line 719, in init_ui
+    self.rt_logger = RealTimeLogger()
+                     ~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\utils\realtime_logger.py", line 36, in __init__
+    if hasattr(self, '_initialized'):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: super-class __init__() of type RealTimeLogger was never called
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 52, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 172, in init_navigation
+    self._init_developer_console()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 184, in _init_developer_console
+    self._add_developer_console_ui()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 189, in _add_developer_console_ui
+    self._developer_console_page = DeveloperConsolePage(self)
+                                   ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "G:\docker\diskclean\src\ui\developer_console.py", line 683, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\developer_console.py", line 719, in init_ui
+    self.rt_logger = RealTimeLogger()
+                     ~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\utils\realtime_logger.py", line 36, in __init__
+    if hasattr(self, '_initialized'):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: super-class __init__() of type RealTimeLogger was never called
+
