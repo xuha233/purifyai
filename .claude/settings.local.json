@@ -22,7 +22,8 @@
       "Bash(cd /g/docker/diskclean && rm tests/test_backup_manager.py 2>&1)",
       "Bash(cd /g/docker/diskclean && git add src/core/backup_manager.py tests/test_backup_manager.py 2>&1 && git status 2>&1)",
       "Bash(cat:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(tee /tmp/test_results.txt)"
     ]
   }
 }
