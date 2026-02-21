@@ -64,6 +64,15 @@ from .appdata_migration import (
     MigrateThread, RollbackThread
 )
 
+# 备份管理器
+from .backup_manager import BackupManager, BackupStats, get_backup_manager
+
+# 执行引擎
+from .execution_engine import (
+    SmartCleanupExecutor, ExecutionThread, ExecutionConfig,
+    ExecutionPhase, ErrorType, RetryStrategy, get_executor
+)
+
 __all__ = [
     # AI 客户端
     'AIClient', 'AIConfig',
@@ -109,4 +118,16 @@ __all__ = [
     'ScanMigrationThread',
     'MigrateThread',
     'RollbackThread',
+    # 备份管理器
+    'BackupManager',
+    'BackupStats',
+    'get_backup_manager',
+    # 执行引擎
+    'SmartCleanupExecutor',
+    'ExecutionThread',
+    'ExecutionConfig',
+    'ExecutionPhase',
+    'ErrorType',
+    'RetryStrategy',
+    'get_executor',
 ]

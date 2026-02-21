@@ -2,7 +2,27 @@
   "permissions": {
     "allow": [
       "Bash(git init)",
-      "Bash(git add .)"
+      "Bash(git add .)",
+      "Bash(git commit:*)",
+      "Bash(git config user.email \"user@purifyai.local\")",
+      "Bash(git config user.name \"PurifyAI Developer\")",
+      "Bash(where gh)",
+      "Bash(gh auth status)",
+      "Bash(gh repo create purifyai --public --source=. --remote=origin --push --description \"Smart disk cleaning tool powered by PyQt5 and AI\")",
+      "Bash(gh repo view purifyai --json name,url)",
+      "Bash(git push -u origin master)",
+      "Bash(gh repo view --web)",
+      "Bash(gh repo view purifyai)",
+      "Bash(git add src/core/smart_scan_selector.py src/core/depth_disk_scanner.py tests/test_scanners.py)",
+      "Bash(cd /g/docker/diskclean && git add src/core/database.py src/core/database_migration.py 2>&1 && git status 2>&1)",
+      "Bash(cd /g/docker/diskclean && git add src/utils/progress_estimator.py tests/test_progress_estimator.py 2>&1 && git status 2>&1)",
+      "Bash(cd /g/docker/diskclean && git push origin master 2>&1)",
+      "Bash(cd /g/docker/diskclean && git add src/core/ai_analyzer.py tests/test_ai_analyzer.py 2>&1 && git status 2>&1)",
+      "Bash(cd /g/docker/diskclean && git add src/core/rule_engine.py tests/test_rule_engine_enhanced.py 2>&1 && git status 2>&1)",
+      "Bash(cd /g/docker/diskclean && rm tests/test_backup_manager.py 2>&1)",
+      "Bash(cd /g/docker/diskclean && git add src/core/backup_manager.py tests/test_backup_manager.py 2>&1 && git status 2>&1)",
+      "Bash(cat:*)",
+      "Bash(cd:*)"
     ]
   }
 }
