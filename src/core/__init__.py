@@ -73,6 +73,12 @@ from .execution_engine import (
     ExecutionPhase, ErrorType, RetryStrategy, get_executor
 )
 
+# 智能清理器
+from .smart_cleaner import (
+    SmartCleaner, SmartCleanConfig, SmartCleanPhase, ScanType,
+    get_smart_cleaner
+)
+
 __all__ = [
     # AI 客户端
     'AIClient', 'AIConfig',
@@ -130,4 +136,10 @@ __all__ = [
     'ErrorType',
     'RetryStrategy',
     'get_executor',
+    # 智能清理器
+    'SmartCleaner',
+    'SmartCleanConfig',
+    'SmartCleanPhase',
+    'ScanType',
+    'get_smart_cleaner',
 ]
