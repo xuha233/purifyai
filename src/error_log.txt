@@ -742,3 +742,171 @@ Traceback (most recent call last):
        ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
 RuntimeError: super-class __init__() of type RealTimeLogger was never called
 
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\appdata_migration_dialog.py", line 482, in _add_folder_item
+    self.empty_label.deleteLater()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
+

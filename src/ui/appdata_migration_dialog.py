@@ -477,9 +477,13 @@ class AppDataMigrationDialog(QDialog):
         widget = MigrationItemWidget(item)
         self.folder_widgets.append(widget)
 
-        # 移除空状态
+        # 移除空状态（只移除一次）
         if self.empty_label:
-            self.empty_label.deleteLater()
+            try:
+                self.empty_label.deleteLater()
+            except RuntimeError:
+                # Widget 已经被删除，忽略错误
+                pass
             self.empty_label = None
 
         self.folder_list_layout.addWidget(widget)
