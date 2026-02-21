@@ -79,6 +79,12 @@ from .smart_cleaner import (
     get_smart_cleaner
 )
 
+# 恢复管理器
+from .recovery_manager import (
+    RecoveryManager, RecoveryTask, RecoveryStats,
+    RestoreStatus, get_recovery_manager
+)
+
 __all__ = [
     # AI 客户端
     'AIClient', 'AIConfig',
@@ -142,4 +148,10 @@ __all__ = [
     'SmartCleanPhase',
     'ScanType',
     'get_smart_cleaner',
+    # 恢复管理器
+    'RecoveryManager',
+    'RecoveryTask',
+    'RecoveryStats',
+    'RestoreStatus',
+    'get_recovery_manager',
 ]
