@@ -611,6 +611,179 @@ class RuleEngine:
         """
         return self.rules.copy()
 
+    # ------------------------------------------------------------------------
+    # 批量评估方法 (Phase 2 Day 5 增强)
+    # ------------------------------------------------------------------------
+
+    def classify_batch(
+        self,
+        items: List[tuple[str, int]],
+        progress_callback: Optional[Callable] = None
+    ) -> List[RiskLevel]:
+        """批量分类多个文件/文件夹
+
+        Args:
+            items: 文件/文件夹列表，每个元素为 (path, size) 元组
+            progress_callback: 进度回调函数 callback(current, total)
+
+        Returns:
+            List[RiskLevel]: 风险等级列表
+        """
+        results = []
+        total = len(items)
+
+        for i, (path, size) in enumerate(items):
+            risk_level = self.classify(path, size)
+            results.append(risk_level)
+
+            if progress_callback:
+                progress_callback(i + 1, total)
+
+        return results
+
+    def evaluate_paths_batch(
+        self,
+        paths: List[str],
+        progress_callback: Optional[Callable] = None
+    ) -> Dict[str, RiskLevel]:
+        """批量评估多个路径
+
+        Args:
+            paths: 路径列表
+            progress_callback: 进度回调函数 callback(current, total)
+
+        Returns:
+            Dict[str, RiskLevel]: 路径到风险等级的映射
+        """
+        results = {}
+        total = len(paths)
+
+        for i, path in enumerate(paths):
+            # 获取文件大小
+            size = 0
+            try:
+                if os.path.exists(path):
+                    size = os.path.getsize(path)
+            except Exception:
+                pass
+
+            risk_level = self.classify(path, size)
+            results[path] = risk_level
+
+            if progress_callback:
+                progress_callback(i + 1, total)
+
+        return results
+
+    def filter_by_risk_level(
+        self,
+        items: List[tuple[str, int]],
+        risk_level: RiskLevel
+    ) -> List[tuple[str, int]]:
+        """根据风险等级过滤项目
+
+        Args:
+            items: 文件/文件夹列表
+            risk_level: 要过滤的风险等级
+
+        Returns:
+            List[tuple[str, int]]: 匹配的项目列表
+        """
+        matched = []
+        for path, size in items:
+            if self.classify(path, size) == risk_level:
+                matched.append((path, size))
+        return matched
+
+    def classify_with_description(
+        self,
+        path: str,
+        size: int = 0,
+        last_accessed: Optional[datetime] = None,
+        is_file: bool = True
+    ) -> tuple[RiskLevel, str]:
+        """分类并返回描述信息
+
+        Args:
+            path: 文件/文件夹路径
+            size: 大小（字节）
+            last_accessed: 最后访问时间
+            is_file: 是否为文件（False 为文件夹）
+
+        Returns:
+            tuple[RiskLevel, str]: (风险等级, 描述)
+        """
+        risk_level = self.classify(path, size, last_accessed, is_file)
+
+        # 生成描述
+        description = self._generate_description(path, risk_level)
+
+        return risk_level, description
+
+    def generate_description(self, path: str, risk_level: RiskLevel) -> str:
+        """生成风险描述
+
+        Args:
+            path: 文件路径
+            risk_level: 风险等级
+
+        Returns:
+            str: 描述文本
+        """
+        return self._generate_description(path, risk_level)
+
+    def _generate_description(self, path: str, risk_level: RiskLevel) -> str:
+        """生成风险等级描述
+
+        Args:
+            path: 文件路径
+            risk_level: 风险等级
+
+        Returns:
+            str: 描述文本
+        """
+        path_lower = path.lower()
+        filename = os.path.basename(path)
+
+        if risk_level == RiskLevel.SAFE:
+            safe_patterns = {
+                'temp': '临时文件',
+                'cache': '缓存数据',
+                'log': '日志文件',
+                'prefetch': '预取数据',
+                'thumb': '缩略图缓存',
+            }
+            for pattern, desc in safe_patterns.items():
+                if pattern in filename or pattern in path_lower:
+                    return f"{desc}，可安全删除"
+            return "安全清理项"
+
+        elif risk_level == RiskLevel.DANGEROUS:
+            dangerous_patterns = {
+                'windows': 'Windows系统文件',
+                'system32': '系统关键目录',
+                'driver': '驱动程序',
+                'program files': '程序安装目录',
+            }
+            for pattern, desc in dangerous_patterns.items():
+                if pattern in path_lower:
+                    return f"{desc}，不建议删除"
+            if '.exe' in filename or '.dll' in filename:
+                return "可执行程序，不建议删除"
+            return "危险清理项"
+
+        else:  # SUSPICIOUS
+            suspicious_indicators = {
+                'config': '配置文件',
+                'settings': '设置文件',
+                'data': '数据文件',
+                'user': '用户数据',
+            }
+            for pattern, desc in suspicious_indicators.items():
+                if pattern in path_lower:
+                    return f"{desc}，需用户确认"
+            return "疑似项目，需用户确认"
+
 
 # 全局规则引擎实例（单例模式）
 _global_rule_engine: Optional[RuleEngine] = None
