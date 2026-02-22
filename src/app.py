@@ -14,6 +14,7 @@ from ui.dashboard import DashboardPage
 from ui.system_cleaner import SystemCleanerPage
 from ui.browser_cleaner import BrowserCleanerPage
 from ui.custom_cleaner import CustomCleanerPage
+from ui.smart_cleanup_page import SmartCleanupPage
 from ui.settings import SettingsPage
 from ui.history_page import HistoryPage
 from ui.recovery_dialog import RecoveryDialog
@@ -107,6 +108,7 @@ class PurifyAIApp(QWidget):
         self.system_cleaner_page = SystemCleanerPage()
         self.browser_cleaner_page = BrowserCleanerPage()
         self.custom_cleaner_page = CustomCleanerPage()
+        self.smart_cleanup_page = SmartCleanupPage()
         self.recovery_page = RecoveryPage()
         self.history_page = HistoryPage()
         self.settings_page = SettingsPage(self)  # 传入 self 以设置回调
@@ -115,6 +117,7 @@ class PurifyAIApp(QWidget):
         self.stacked_widget.addWidget(self.system_cleaner_page)
         self.stacked_widget.addWidget(self.browser_cleaner_page)
         self.stacked_widget.addWidget(self.custom_cleaner_page)
+        self.stacked_widget.addWidget(self.smart_cleanup_page)
         self.stacked_widget.addWidget(self.recovery_page)
         self.stacked_widget.addWidget(self.history_page)
         self.stacked_widget.addWidget(self.settings_page)
@@ -138,6 +141,13 @@ class PurifyAIApp(QWidget):
             icon=FluentIcon.GLOBE,
             text="浏览器清理",
             onClick=lambda: self.navigate_to("browserCleaner", self.browser_cleaner_page)
+        )
+
+        self.navigation.addItem(
+            routeKey="smartCleanup",
+            icon=FluentIcon.SYNC,
+            text="智能清理",
+            onClick=lambda: self.navigate_to("smartCleanup", self.smart_cleanup_page)
         )
 
         self.navigation.addItem(
@@ -225,6 +235,8 @@ class PurifyAIApp(QWidget):
             self.navigate_to("systemCleaner", self.system_cleaner_page)
         elif route_key == "browserCleaner":
             self.navigate_to("browserCleaner", self.browser_cleaner_page)
+        elif route_key == "smartCleanup":
+            self.navigate_to("smartCleanup", self.smart_cleanup_page)
         elif route_key == "customCleaner":
             self.navigate_to("customCleaner", self.custom_cleaner_page)
         elif route_key == "history":

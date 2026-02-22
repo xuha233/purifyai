@@ -910,3 +910,107 @@ Traceback (most recent call last):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
 RuntimeError: wrapped C/C++ object of type BodyLabel has been deleted
 
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 53, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 111, in init_navigation
+    self.smart_cleanup_page = SmartCleanupPage()
+                              ~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 468, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 493, in init_ui
+    header_icon = IconWidget(FluentIcon.MAGIC)
+                             ^^^^^^^^^^^^^^^^
+AttributeError: type object 'FluentIcon' has no attribute 'MAGIC'. Did you mean: 'MAIL'?
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 53, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 111, in init_navigation
+    self.smart_cleanup_page = SmartCleanupPage()
+                              ~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 468, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 568, in init_ui
+    self.stats_panel = self._create_stats_panel()
+                       ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 772, in _create_stats_panel
+    FluentIcon.STORAGE,
+    ^^^^^^^^^^^^^^^^^^
+AttributeError: type object 'FluentIcon' has no attribute 'STORAGE'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 53, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 111, in init_navigation
+    self.smart_cleanup_page = SmartCleanupPage()
+                              ~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 468, in __init__
+    self.init_ui()
+    ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 568, in init_ui
+    self.stats_panel = self._create_stats_panel()
+                       ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 805, in _create_stats_panel
+    layout.addWidget(self.freed_card)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+TypeError: addWidget(self, a0: Optional[QWidget], stretch: int = 0, alignment: Union[Qt.Alignment, Qt.AlignmentFlag] = Qt.Alignment()): argument 1 has unexpected type 'QColor'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 53, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 148, in init_navigation
+    icon=FluentIcon.MAGIC,
+         ^^^^^^^^^^^^^^^^
+AttributeError: type object 'FluentIcon' has no attribute 'MAGIC'. Did you mean: 'MAIL'?
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 346, in _showComboMenu
+    if self.currentIndex() >= 0 and self.items:
+       ~~~~~~~~~~~~~~~~~^^
+TypeError: 'int' object is not callable
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 415, in mouseReleaseEvent
+    self._toggleComboMenu()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 368, in _toggleComboMenu
+    self._showComboMenu()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\combo_box.py", line 346, in _showComboMenu
+    if self.currentIndex() >= 0 and self.items:
+       ~~~~~~~~~~~~~~~~~^^
+TypeError: 'int' object is not callable
+

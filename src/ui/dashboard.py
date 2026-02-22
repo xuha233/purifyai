@@ -176,9 +176,9 @@ class DashboardPage(QWidget):
         self.settings_btn.clicked.connect(lambda: self.navigate_requested.emit('settings'))
         tools_row.addWidget(self.settings_btn)
 
-        self.scheduler_btn = self._create_tool_btn('计划', FluentIcon.CALENDAR)
-        self.scheduler_btn.clicked.connect(lambda: self._show_scheduler_dialog())
-        tools_row.addWidget(self.scheduler_btn)
+        self.console_btn = self._create_tool_btn('控制台', FluentIcon.DEVELOPER_TOOLS)
+        self.console_btn.clicked.connect(lambda: self._show_console_dialog())
+        tools_row.addWidget(self.console_btn)
 
         tools_layout.addLayout(tools_row)
 
@@ -257,14 +257,14 @@ class DashboardPage(QWidget):
         except Exception as e:
             print(f"无法打开白名单对话框: {e}")
 
-    def _show_scheduler_dialog(self):
-        """显示计划任务对话框"""
+    def _show_console_dialog(self):
+        """显示开发者控制台对话框"""
         try:
-            from ui.scheduler_dialog import SchedulerDialog
-            dialog = SchedulerDialog(self)
-            dialog.exec_()
+            from ui.developer_console_window import DeveloperConsoleWindow
+            console = DeveloperConsoleWindow(self)
+            console.show()
         except Exception as e:
-            print(f"无法打开计划任务对话框: {e}")
+            print(f"无法打开开发者控制台: {e}")
 
     def _create_min_stat_card(self, label: str, color: str):
         """创建最小统计卡片"""

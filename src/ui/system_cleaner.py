@@ -59,7 +59,6 @@ from ui.windows_notification import WindowsNotification
 from ui.scan_status_widget import ScanStatusWidget
 from ui.ai_review_widgets import ReviewProgressBar, ReviewSummaryCard, AIReviewCard
 from ui.appdata_migration_dialog import AppDataMigrationDialog
-from ui.smart_cleanup_page import SmartCleanupPage
 
 
 class SystemCleanerPage(QWidget):
@@ -113,10 +112,9 @@ class SystemCleanerPage(QWidget):
         self.mode_segment = SegmentedWidget()
         self.mode_segment.addItem('system', '系统文件')
         self.mode_segment.addItem('appdata', 'AppData')
-        self.mode_segment.addItem('smart', '智能清理')
         self.mode_segment.setCurrentItem('system')
         self.mode_segment.currentItemChanged.connect(self.on_mode_changed)
-        self.mode_segment.setFixedWidth(260)
+        self.mode_segment.setFixedWidth(180)
         toolbar_layout.addWidget(self.mode_segment)
 
         # 迁移工具按钮 (仅 AppData 模式下显示)
@@ -185,10 +183,6 @@ class SystemCleanerPage(QWidget):
 
         appdata_layout.addStretch()
         self.stack.addWidget(self.appdata_widget)
-
-        # ========== Smart 清理设置 ==========
-        self.smart_widget = SmartCleanupPage()
-        self.stack.addWidget(self.smart_widget)
 
         settings_layout.addWidget(self.stack)
 
@@ -559,11 +553,6 @@ class SystemCleanerPage(QWidget):
             self.current_scanner = self.appdata_scanner
             self.stack.setCurrentIndex(1)
             self.migration_btn.setVisible(appdata_migration_enabled)
-        else:  # smart mode
-            self.current_mode = 'smart'
-            self.stack.setCurrentIndex(2)  # SmartCleanupPage is at index 2
-            self.migration_btn.setVisible(False)
-            return  # Smart mode has its own UI, don't clear results
 
         self._clear_results()
 
@@ -573,6 +562,12 @@ class SystemCleanerPage(QWidget):
         if self.current_mode == 'appdata':
             self.migration_btn.setVisible(appdata_migration_enabled)
         else:
+            self.migration_btn.setVisible(False)
+
+    def _on_route_changed(self, route_key):
+        """导航变化时的处理"""
+        if route_key == 'system':
+            # System Clean: 确保迁移按钮隐藏
             self.migration_btn.setVisible(False)
 
     def _clear_results(self):
