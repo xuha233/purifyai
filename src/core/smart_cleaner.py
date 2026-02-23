@@ -30,7 +30,7 @@ from enum import Enum
 from typing import List, Dict, Optional, Callable
 from dataclasses import dataclass
 
-from PyQt5.QtCore import QObject, pyqtSignal, QThread, QMutex, QMutexLocker, Qt
+from PyQt5.QtCore import QObject, pyqtSignal, QThread, QMutex, QMutexLocker
 
 from .scanner import SystemScanner, BrowserScanner, AppDataScanner
 from .custom_scanner import CustomScanner
@@ -72,26 +72,24 @@ class ScannerAdapter(QThread):
                    '连接扫描器信号',
                    scanner_type=type(self.scanner).__name__)
 
-        # _on_complete 需要使用 DirectConnection，因为 ScanThread 在等待
-        # 而不进入事件循环，QueuedConnection 的信号会被积压无法处理
+        # AutoConnection (default) - Qt 自动选择 Qt.AutoConnection
         if hasattr(self.scanner, 'complete'):
-            self.scanner.complete.connect(self._on_complete, Qt.DirectConnection)
+            self.scanner.complete.connect(self._on_complete)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
-                       '已连接 complete 信号 (DirectConnection)')
+                       '已连接 complete 信号')
 
-        # 其他信号使用 AutoConnection，让 Qt 自动选择最佳策略
         if hasattr(self.scanner, 'item_found'):
-            self.scanner.item_found.connect(self.item_found.emit, Qt.AutoConnection)
+            self.scanner.item_found.connect(self.item_found.emit)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 item_found 信号')
 
         if hasattr(self.scanner, 'error'):
-            self.scanner.error.connect(self.error.emit, Qt.AutoConnection)
+            self.scanner.error.connect(self.error.emit)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 error 信号')
 
         if hasattr(self.scanner, 'progress'):
-            self.scanner.progress.connect(self._translate_progress, Qt.AutoConnection)
+            self.scanner.progress.connect(self._translate_progress)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 progress 信号')
 
@@ -116,6 +114,8 @@ class ScannerAdapter(QThread):
 
     def _on_complete(self, results):
         try:
+            self.logger.info(f"[ScannerAdapter] _on_complete 被调用! 结果数量: {len(results) if results else 0}")
+
             if not hasattr(self, 'logger'):
                 from utils.logger import get_logger
                 self.logger = get_logger(__name__)
@@ -126,20 +126,15 @@ class ScannerAdapter(QThread):
             self._results = results_list
             self._is_running = False
 
-            debug_event('INFO', 'ScannerAdapter', '_on_complete',
-                       '扫描完成，准备发送 complete 信号',
-                       results_count=len(results_list))
-
-            self.logger.info(f"[ScannerAdapter] 扫描完成: {len(self._results)} 项，准备发送 complete 信号")
+            self.logger.info(f"[ScannerAdapter] 扫描完成: {len(self._results)} 项，_is_running 设为 False")
 
             self.complete.emit(self._results)
-            track_signal('complete', 'ScannerAdapter', 'ScanThread', emitted=True, received=False)
-
-            debug_event('INFO', 'ScannerAdapter', '_on_complete',
-                       'complete 信号已发送')
 
             self.logger.info(f"[ScannerAdapter] complete 信号已发送")
         except Exception as e:
+            self.logger.error(f"[ScannerAdapter] _on_complete 异常: {str(e)}")
+            import traceback
+            traceback.print_exc()
             debug_exception('ScannerAdapter', '_on_complete', '处理完成信号异常', exc_info=sys.exc_info())
             self.error.emit(f'扫描完成处理异常: {str(e)}')
             raise
@@ -184,9 +179,16 @@ class ScannerAdapter(QThread):
 
     @property
     def is_running(self):
-        # 返回内部状态，而不是scanner的is_running
-        # 这样可以确保ScanThread能正确检测完成状态
-        return self._is_running
+        """检查扫描是否还在运行 - 直接检查 scanner 的状态"""
+        # 直接检查 scanner 的 is_running 属性
+        if hasattr(self.scanner, 'is_running'):
+            return self.scanner.is_running
+
+        # 检查 scanner 的 scan_thread 是否还在运行
+        if hasattr(self.scanner, 'scan_thread') and self.scanner.scan_thread:
+            return self.scanner.scan_thread.is_alive()
+
+        return False
 
     @property
     def results(self):
