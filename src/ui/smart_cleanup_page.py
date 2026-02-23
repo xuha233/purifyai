@@ -984,21 +984,32 @@ class SmartCleanupPage(QWidget):
         # 启动超时检测
         self._start_timeout_timer()
 
-        # 启动旋转动画和扫描信息卡片
-        self.scan_indicator.start()
-        self.scan_info_card.setVisible(True)
-        self.scan_info_card.set_current_path(f"正在扫描: {scan_type}", "初始化扫描器...")
-        self.scan_current_path_label.setVisible(True)
-        self.scan_current_path_label.setText(f"扫描中...")
+        # 初始化扫描信息卡片
+        scan_type_names = {
+            "system": "系统垃圾",
+            "browser": "浏览器缓存",
+            "appdata": "应用数据",
+            "custom": "自定义路径"
+        }
+        scan_type_name = scan_type_names.get(scan_type, scan_type)
+
+        # 设置UI状态为scanning（这会显示动画）
+        self._set_ui_state('scanning')
+
+        # 更新扫描信息卡片
+        if hasattr(self, 'scan_info_card'):
+            self.scan_info_card.set_current_path(f"正在扫描: {scan_type_name}", "初始化扫描器...")
 
         # 启动实时路径更新定时器（每2秒更新一次）
+        if hasattr(self, 'scan_path_timer'):
+            self.scan_path_timer.stop()
         self.scan_path_timer = QTimer()
         self.scan_path_timer.timeout.connect(self._update_scan_path)
         self.scan_path_timer.start(2000)
 
+        # 启动扫描
         self.cleaner.start_scan(scan_type, scan_target)
         self.current_plan = None
-        self._set_ui_state('scanning')
 
     def _update_scan_path(self):
         """实时更新扫描路径显示"""
@@ -1187,6 +1198,13 @@ class SmartCleanupPage(QWidget):
             'error': '发生错误'
         }
         self.status_label.setText(phase_names.get(phase, phase))
+
+        # 重要：同步UI状态（除了preview和completed，因为这会在各自的回调中处理）
+        if phase in ('scanning', 'analyzing', 'executing'):
+            self._set_ui_state(phase)
+        elif phase == 'idle' or phase == 'error':
+            self._set_ui_state(phase)
+
         self.cleanup_phase_changed.emit(phase)
 
     def _on_scan_progress(self, current: int, total: int):
@@ -1311,17 +1329,21 @@ class SmartCleanupPage(QWidget):
         """设置 UI 状态"""
         self.state = state
 
-        # 停止动画和超时检测
-        if hasattr(self, 'scan_indicator'):
-            self.scan_indicator.stop()
-        if hasattr(self, 'scan_animation'):
-            self.scan_animation.stop()
-        if hasattr(self, 'scan_path_timer'):
-            self.scan_path_timer.stop()
-        self.scan_indicator.setVisible(False)
-        self.scan_info_card.setVisible(False)
-        self.scan_current_path_label.setVisible(False)
-        self._stop_timeout_timer()
+        # states that should hide animations
+        animating_states = {'scanning', 'analyzing', 'executing'}
+
+        if state not in animating_states:
+            # 停止动画和超时检测（只在非动画状态）
+            if hasattr(self, 'scan_indicator'):
+                self.scan_indicator.stop()
+            if hasattr(self, 'scan_animation'):
+                self.scan_animation.stop()
+            if hasattr(self, 'scan_path_timer'):
+                self.scan_path_timer.stop()
+            self.scan_indicator.setVisible(False)
+            self.scan_info_card.setVisible(False)
+            self.scan_current_path_label.setVisible(False)
+            self._stop_timeout_timer()
 
         if state == 'idle':
             self.phase_indicator.update_phase(0)
@@ -1337,6 +1359,18 @@ class SmartCleanupPage(QWidget):
         elif state == 'scanning':
             self.phase_indicator.update_phase(1)
             self.progress_bar.setVisible(True)
+            self.progress_bar.setRange(0, 0)  # 设置为不确定进度模式（旋转）
+            self.status_label.setText("扫描中...")
+
+            # 显示扫描动画组件
+            if hasattr(self, 'scan_indicator'):
+                self.scan_indicator.setVisible(True)
+                self.scan_indicator.start()
+            if hasattr(self, 'scan_info_card'):
+                self.scan_info_card.setVisible(True)
+            if hasattr(self, 'scan_current_path_label'):
+                self.scan_current_path_label.setVisible(True)
+
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
             self.auto_select_safe_btn.setEnabled(False)
@@ -1344,6 +1378,17 @@ class SmartCleanupPage(QWidget):
 
         elif state == 'analyzing':
             self.phase_indicator.update_phase(2)
+            self.status_label.setText("正在分析...")
+
+            # 保持扫描动画组件可见
+            if hasattr(self, 'scan_indicator'):
+                self.scan_indicator.setVisible(True)
+                self.scan_indicator.start()
+            if hasattr(self, 'scan_info_card'):
+                self.scan_info_card.setVisible(True)
+                # 更新为分析状态
+                self.scan_info_card.set_analyzing("AI 正在分析扫描结果...")
+
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
 
@@ -1356,10 +1401,12 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(False)
             self.auto_select_safe_btn.setEnabled(True)
             self.clear_selection_btn.setEnabled(True)
+            self.status_label.setText(f"发现 {len(self.current_plan.items) if self.current_plan else 0} 个可清理项")
 
         elif state == 'executing':
             self.phase_indicator.update_phase(4)
             self.progress_bar.setVisible(True)
+            self.status_label.setText("清理中...")
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
             self.auto_select_safe_btn.setEnabled(False)
@@ -1374,12 +1421,14 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(False)
             self.auto_select_safe_btn.setEnabled(True if self.item_cards else False)
             self.clear_selection_btn.setEnabled(True if self.item_cards else False)
+            self.status_label.setText("清理完成")
 
         elif state == 'error':
             self.phase_indicator.update_phase(0)
             self.progress_bar.setVisible(False)
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
+            self.status_label.setText("发生错误")
 
     def _load_items_from_plan(self, plan: CleanupPlan):
         """从清理计划加载项目"""

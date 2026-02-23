@@ -29,7 +29,8 @@
       "Bash(cmd:*)",
       "Bash(::*)",
       "Bash(cd /g/docker/diskclean && git checkout -- src/core/smart_cleaner.py 2>&1)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)"
     ]
   }
 }
