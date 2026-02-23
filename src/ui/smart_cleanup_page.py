@@ -1072,11 +1072,15 @@ class SmartCleanupPage(QWidget):
         """取消操作"""
         self.logger.info("[UI] 取消操作")
         self.cleaner.cancel()
+        # 重置清理器状态
+        self.cleaner.reset()
         self._set_ui_state('idle')
 
     def _on_refresh(self):
         """刷新"""
         self.logger.info("[UI] 刷新扫描")
+        # 重置清理器状态
+        self.cleaner.reset()
         self._clear_items()
         self._set_ui_state('idle')
 
@@ -1410,6 +1414,9 @@ class SmartCleanupPage(QWidget):
 
     def _on_execution_completed(self, result):
         """执行完成回调"""
+        # 重置清理器状态，允许新的扫描
+        self.cleaner.reset()
+
         self._set_ui_state('completed')
 
         success_text = f"清理完成！成功: {result.success_items} | 释放: {self._format_size(result.freed_size)}"
@@ -1429,6 +1436,8 @@ class SmartCleanupPage(QWidget):
 
     def _on_error(self, error_msg: str):
         """错误回调"""
+        # 重置清理器状态
+        self.cleaner.reset()
         self._set_ui_state('error')
         self.status_label.setText(f"错误: {error_msg}")
         InfoBar.error("操作失败", error_msg,
