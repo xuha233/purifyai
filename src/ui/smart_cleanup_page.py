@@ -593,6 +593,8 @@ class SmartCleanupPage(QWidget):
     """
 
     cleanup_phase_changed = pyqtSignal(str)
+    show_cleanup_report = pyqtSignal(object, object)  # plan, result
+    retry_failed = pyqtSignal(list)  # failed_item_ids
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -615,6 +617,11 @@ class SmartCleanupPage(QWidget):
 
         # AI复核结果存储
         self.ai_review_results: Dict[str, AIReviewResult] = {}
+
+        # 清理报告相关
+        self._last_execution_result = None
+        self._last_cleanup_plan = None
+        self._original_plan = None
 
         # 连接信号
         self._connect_signals()
@@ -784,6 +791,14 @@ class SmartCleanupPage(QWidget):
         self.auto_clean_btn.clicked.connect(self._on_auto_clean_clicked)
         self.auto_clean_btn.setVisible(False)  # 只在 PREVIEW 阶段显示
         actions_layout.addWidget(self.auto_clean_btn)
+
+        # 查看详细报告按钮（清理完成后显示）
+        self.view_report_btn = PushButton(FluentIcon.DOCUMENT, "查看详细报告")
+        self.view_report_btn.setFixedHeight(40)
+        self.view_report_btn.setMinimumWidth(140)
+        self.view_report_btn.clicked.connect(self._on_view_report_clicked)
+        self.view_report_btn.setVisible(False)  # 只在 COMPLETED 阶段显示
+        actions_layout.addWidget(self.view_report_btn)
 
         main_layout.addLayout(actions_layout)
 
@@ -1685,6 +1700,10 @@ class SmartCleanupPage(QWidget):
         # 重置清理器状态，允许新的扫描
         self.cleaner.reset()
 
+        # 保存执行结果用于生成报告
+        self._last_execution_result = result
+        self._last_cleanup_plan = self.current_plan
+
         self._set_ui_state('completed')
 
         success_text = f"清理完成！成功: {result.success_items} | 释放: {self._format_size(result.freed_size)}"
@@ -1703,12 +1722,20 @@ class SmartCleanupPage(QWidget):
                 card.deleteLater()
             self.item_cards.clear()
 
-        # 清空当前计划，因为文件已被处理
+        # 显示"查看详细报告"按钮
+        self._show_report_button()
+
+        # 清空当前计划（但在报告中使用之前保存的引用）
         self.current_plan = None
         self._update_items_count()
 
         # 恢复按钮到正常的主操作逻辑
         self._restore_main_action_button()
+
+    def _show_report_button(self):
+        """显示查看详细报告按钮"""
+        # 显示查看详细报告按钮
+        self.view_report_btn.setVisible(True)
 
     def _restore_main_action_button(self):
         """恢复主按钮到正常状态（开始扫描）"""
@@ -1732,6 +1759,15 @@ class SmartCleanupPage(QWidget):
         self._set_ui_state('executing')
         # 清空待清理项目
         self._pending_selected_items = None
+
+    def _on_view_report_clicked(self):
+        """点击查看详细报告按钮"""
+        if hasattr(self, '_last_cleanup_plan') and hasattr(self, '_last_execution_result'):
+            self.logger.info(f"[UI] 查看详细报告: {self._last_execution_result.plan_id}")
+            self.show_cleanup_report.emit(
+                self._last_cleanup_plan if self._last_cleanup_plan else None,
+                self._last_execution_result
+            )
 
     def _on_error(self, error_msg: str):
         """错误回调"""
@@ -1769,6 +1805,8 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
             self.auto_select_safe_btn.setEnabled(False)
             self.ai_review_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
@@ -1791,6 +1829,7 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
             self.auto_select_safe_btn.setEnabled(False)
             self.ai_review_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
@@ -1812,6 +1851,7 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
             self.auto_select_safe_btn.setEnabled(False)
             self.ai_review_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
@@ -1829,6 +1869,7 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(False)
             # 全自动托管模式下隐藏 AI 一键清理按钮（因为会全自动执行）
             self.auto_clean_btn.setVisible(not self.config.enable_ai)
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
             self.auto_select_safe_btn.setEnabled(True)
             self.ai_review_btn.setEnabled(True)
             self.clear_selection_btn.setEnabled(True)
@@ -1844,6 +1885,7 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
             self.auto_select_safe_btn.setEnabled(False)
             self.ai_review_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
@@ -1860,6 +1902,8 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
+            self.view_report_btn.setVisible(True)  # 显示查看报告按钮
             self.auto_select_safe_btn.setEnabled(True if self.item_cards else False)
             self.ai_review_btn.setEnabled(True if self.item_cards else False)
             self.clear_selection_btn.setEnabled(True if self.item_cards else False)
@@ -1875,6 +1919,7 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.view_report_btn.setVisible(False)  # 隐藏查看报告按钮
             self.ai_review_btn.setEnabled(False)
             self.status_label.setText("发生错误")
 

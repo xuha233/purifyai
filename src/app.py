@@ -20,6 +20,7 @@ from ui.history_page import HistoryPage
 from ui.recovery_dialog import RecoveryDialog
 from ui.recovery_page import RecoveryPage
 from ui.developer_console import DeveloperConsolePage
+from ui.cleanup_report_page import CleanupReportPage
 
 from ui.system_tray import SystemTray
 from ui.windows_notification import WindowsNotification
@@ -112,6 +113,7 @@ class PurifyAIApp(QWidget):
         self.recovery_page = RecoveryPage()
         self.history_page = HistoryPage()
         self.settings_page = SettingsPage(self)  # 传入 self 以设置回调
+        self.cleanup_report_page = CleanupReportPage()
 
         self.stacked_widget.addWidget(self.dashboard_page)
         self.stacked_widget.addWidget(self.system_cleaner_page)
@@ -121,6 +123,7 @@ class PurifyAIApp(QWidget):
         self.stacked_widget.addWidget(self.recovery_page)
         self.stacked_widget.addWidget(self.history_page)
         self.stacked_widget.addWidget(self.settings_page)
+        self.stacked_widget.addWidget(self.cleanup_report_page)
 
         self.navigation.addItem(
             routeKey="dashboard",
@@ -228,6 +231,46 @@ class PurifyAIApp(QWidget):
     def connect_dashboard_signals(self):
         """连接仪表盘导航信号"""
         self.dashboard_page.navigate_requested.connect(self.on_dashboard_navigate)
+
+        # 连接清理报告页面信号
+        self.cleanup_report_page.return_to_scan.connect(self.on_report_return_to_scan)
+        self.cleanup_report_page.navigate_to_recovery.connect(self.on_report_navigate_to_recovery)
+
+        # 连接智能清理页面的报告显示信号
+        self.smart_cleanup_page.show_cleanup_report.connect(self.on_show_cleanup_report)
+        self.smart_cleanup_page.retry_failed.connect(self.on_retry_failed_cleanup)
+
+    def on_show_cleanup_report(self, plan, result):
+        """显示清理报告页面
+
+        Args:
+            plan: 清理计划
+            result: 执行结果
+        """
+        self.on_show_window()  # 确保窗口可见
+        self.cleanup_report_page.show_report(plan, result)
+        self.stacked_widget.setCurrentWidget(self.cleanup_report_page)
+        # 取消导航栏选中状态（因为报告页面不在导航栏中）
+        self.navigation.clearSelection()
+
+    def on_report_return_to_scan(self):
+        """从报告页返回扫描页"""
+        self.navigate_to("smartCleanup", self.smart_cleanup_page)
+
+    def on_report_navigate_to_recovery(self):
+        """从报告页导航到恢复页"""
+        self.navigate_to("recovery", self.recovery_page)
+
+    def on_retry_failed_cleanup(self, failed_item_ids):
+        """重试失败的清理项
+
+        Args:
+            failed_item_ids: 失败项ID列表
+        """
+        # 导航到智能清理页
+        self.navigate_to("smartCleanup", self.smart_cleanup_page)
+        # TODO: 调用重试逻辑（需要扩展SmartCleaner支持重试）
+        logger.info(f"[App] 收到重试请求: {len(failed_item_ids)} 个失败项")
 
     def on_dashboard_navigate(self, route_key):
         """处理仪表盘的导航请求"""
