@@ -560,6 +560,29 @@ class SmartCleaner(QObject):
         self.mutex = QMutex()
         self.logger = logger
 
+        # 连接执行器的信号
+        self._connect_executor_signals()
+
+    def _connect_executor_signals(self):
+        """连接执行器的信号"""
+        self.executor.execution_completed.connect(self._on_executor_completed)
+        self.executor.execution_failed.connect(self._on_executor_failed)
+        self.logger.info("[SMART_CLEAN] 执行器信号已连接")
+
+    def _on_executor_completed(self, result):
+        """执行完成回调 - 转发信号到 UI"""
+        self.logger.info(f"[SMART_CLEAN] 执行完成: plan_id={result.plan_id}, status={result.status.value}")
+        self._set_phase(SmartCleanPhase.COMPLETED)
+        # 转发执行完成信号
+        self.execution_completed.emit(result)
+
+    def _on_executor_failed(self, plan_id: str, error_message: str):
+        """执行失败回调 - 转发信号到 UI"""
+        self.logger.error(f"[SMART_CLEAN] 执行失败: {plan_id} - {error_message}")
+        self._set_phase(SmartCleanPhase.ERROR)
+        # 转发执行失败信号
+        self.execution_failed.emit(plan_id, error_message)
+
     def _get_ai_cost_config(self) -> CostControlConfig:
         """获取AI成本控制配置
 

@@ -12,7 +12,7 @@ Design V2.0
 """
 import os
 from typing import Optional, List, Dict
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QPointF, QRectF
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QPointF, QRectF, QCoreApplication
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout,
     QScrollArea, QFrame, QSplitter, QStackedWidget, QAbstractItemView,
@@ -102,37 +102,48 @@ class StatCard(SimpleCardWidget):
         super().__init__(parent)
         self.setFixedHeight(80)
         self.setCursor(Qt.PointingHandCursor)
+        self._color = color
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(12)
 
         # 图标
-        icon_widget = IconWidget(icon)
-        icon_widget.setFixedSize(36, 36)
-        icon_widget.setStyleSheet(f'color: {color};')
-        layout.addWidget(icon_widget)
+        self._icon_widget = IconWidget(icon)
+        self._icon_widget.setFixedSize(36, 36)
+        self._icon_widget.setStyleSheet(f'color: {color};')
+        layout.addWidget(self._icon_widget)
 
         # 内容
         content_layout = QVBoxLayout()
         content_layout.setSpacing(2)
         content_layout.setContentsMargins(0, 0, 0, 0)
 
-        value_label = StrongBodyLabel(value)
-        value_label.setStyleSheet(f'font-size: 20px; color: {color};')
-        content_layout.addWidget(value_label)
+        self._value_label = StrongBodyLabel(value)
+        self._value_label.setStyleSheet(f'font-size: 20px; color: {color};')
+        content_layout.addWidget(self._value_label)
 
-        title_label = BodyLabel(title)
-        title_label.setStyleSheet('font-size: 12px; color: #666;')
-        content_layout.addWidget(title_label)
+        self._title_label = BodyLabel(title)
+        self._title_label.setStyleSheet('font-size: 12px; color: #666;')
+        content_layout.addWidget(self._title_label)
 
         if subtitle:
-            subtitle_label = BodyLabel(subtitle)
-            subtitle_label.setStyleSheet('font-size: 10px; color: #999;')
-            content_layout.addWidget(subtitle_label)
+            self._subtitle_label = BodyLabel(subtitle)
+            self._subtitle_label.setStyleSheet('font-size: 10px; color: #999;')
+            content_layout.addWidget(self._subtitle_label)
+        else:
+            self._subtitle_label = None
 
         layout.addLayout(content_layout)
         layout.addStretch()
+
+    def set_value(self, value: str):
+        """更新数值"""
+        self._value_label.setText(value)
+
+    def set_title(self, title: str):
+        """更新标题"""
+        self._title_label.setText(title)
 
     def mousePressEvent(self, event):
         """鼠标点击事件"""
@@ -413,8 +424,7 @@ class CleanupItemCard(SimpleCardWidget):
         risk_labels = {
             RiskLevel.SAFE: '安全',
             RiskLevel.SUSPICIOUS: '可疑',
-            RiskLevel.DANGEROUS: '危险',
-            RiskLevel.UNKNOWN: '未知'
+            RiskLevel.DANGEROUS: '危险'
         }
 
         # 获取风险对应的颜色，如果未知则使用wary
@@ -614,19 +624,19 @@ class SmartCleanupPage(QWidget):
 
     def _connect_signals(self):
         """连接 SmartCleaner 信号"""
-        self.cleaner.phase_changed.connect(self._on_phase_changed)
-        self.cleaner.scan_progress.connect(self._on_scan_progress)
-        self.cleaner.analyze_progress.connect(self._on_analyze_progress)
-        self.cleaner.execute_progress.connect(self._on_execute_progress)
-        self.cleaner.plan_ready.connect(self._on_plan_ready)
-        self.cleaner.execution_completed.connect(self._on_execution_completed)
-        self.cleaner.error.connect(self._on_error)
+        self.cleaner.phase_changed.connect(self._on_phase_changed, Qt.QueuedConnection)
+        self.cleaner.scan_progress.connect(self._on_scan_progress, Qt.QueuedConnection)
+        self.cleaner.analyze_progress.connect(self._on_analyze_progress, Qt.QueuedConnection)
+        self.cleaner.execute_progress.connect(self._on_execute_progress, Qt.QueuedConnection)
+        self.cleaner.plan_ready.connect(self._on_plan_ready, Qt.QueuedConnection)
+        self.cleaner.execution_completed.connect(self._on_execution_completed, Qt.QueuedConnection)
+        self.cleaner.error.connect(self._on_error, Qt.QueuedConnection)
 
-        # AI复核信号
-        self.cleaner.ai_review_progress.connect(self._on_ai_review_progress)
-        self.cleaner.ai_item_completed.connect(self._on_ai_item_completed)
-        self.cleaner.ai_item_failed.connect(self._on_ai_item_failed)
-        self.cleaner.ai_review_completed.connect(self._on_ai_review_complete)
+        # AI复核信号 - 使用 QueuedConnection 确保在主线程处理
+        self.cleaner.ai_review_progress.connect(self._on_ai_review_progress, Qt.QueuedConnection)
+        self.cleaner.ai_item_completed.connect(self._on_ai_item_completed, Qt.QueuedConnection)
+        self.cleaner.ai_item_failed.connect(self._on_ai_item_failed, Qt.QueuedConnection)
+        self.cleaner.ai_review_completed.connect(self._on_ai_review_complete, Qt.QueuedConnection)
 
     def init_ui(self):
         """初始化 UI"""
@@ -1261,10 +1271,25 @@ class SmartCleanupPage(QWidget):
             # 延迟隐藏进度条
             QTimer.singleShot(2000, lambda: self.ai_review_progress_bar.setVisible(False))
 
-            # 全自动托管模式：显示清理确认对话框
+            # 全自动托管模式：根据 AI 风险策略决定流程
             if self.config.enable_ai and self.current_plan:
-                self.logger.info("[UI] 全自动托管：显示清理确认对话框")
-                QTimer.singleShot(100, self._show_auto_managed_cleanup_dialog)
+                # 读取 AI 风险策略
+                from core.config_manager import get_config_manager
+                config_mgr = get_config_manager()
+                risk_policy = config_mgr.get('ai_risk_policy', 'conservative')
+
+                self.logger.info(f"[UI] AI 风险策略: {risk_policy}")
+
+                # 激进模式：直接执行清理
+                if risk_policy == 'aggressive':
+                    self.logger.info("[UI] 激进模式：直接执行清理")
+                    QTimer.singleShot(300, self._auto_execute_cleanup)
+                # 保守模式：显示确认对话框
+                else:
+                    self.logger.info("[UI] 保守模式：显示确认对话框")
+                    QTimer.singleShot(300, self._show_cleanup_confirmation)
+                # 立即处理待处理事件，确保 UI 刷新
+                QCoreApplication.processEvents()
 
             else:
                 # 手动模式：显示完成提示
@@ -1283,8 +1308,8 @@ class SmartCleanupPage(QWidget):
             self.ai_review_btn.setText("AI复核")
             self.ai_review_progress_bar.setVisible(False)
 
-    def _show_auto_managed_cleanup_dialog(self):
-        """显示全自动托管清理确认对话框"""
+    def _show_cleanup_confirmation(self):
+        """显示清理确认提示（保守模式 - 使用非阻塞的 InfoBar）"""
         # AI 自动决策
         auto_select_suspicious = self.config.auto_execute_suspicious
         selected_items = self.cleaner.auto_select_items(auto_select_suspicious)
@@ -1294,30 +1319,107 @@ class SmartCleanupPage(QWidget):
                          parent=self, position=InfoBarPosition.TOP)
             return
 
-        # 确认对话框
         total_size = sum(item.size for item in selected_items)
         safe_count = sum(1 for i in selected_items if i.is_safe)
         suspicious_count = sum(1 for i in selected_items if i.is_suspicious)
 
+        # 使用 InfoBar 显示信息，让 AI 一键清理按钮变为可用来触发清理
         message = (
-            f"AI 全自动托管模式将清理以下项目：\n"
-            f"• 安全项: {safe_count}\n"
-            f"• 疑似项: {suspicious_count}\n"
-            f"• 危险项: 已跳过\n\n"
-            f"预计释放空间: {self._format_size(total_size)}\n\n"
-            f"⚠️此操作不可撤销，是否继续？"
+            f"AI 复核完成: Safe={safe_count}, Suspicious={suspicious_count}, Dangerous=已跳过 | "
+            f"预计释放 {self._format_size(total_size)}"
         )
 
-        msg_box = MessageBox("AI 全自动托管清理确认", message, self)
-        msg_box.yesButton.setText("确认清理")
-        msg_box.cancelButton.setText("取消")
+        InfoBar.success(
+            title='AI 复核完成',
+            content=message,
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=0,  # 不自动关闭
+            parent=self
+        )
 
-        if msg_box.exec() != MessageBox.Accepted:
+        # 显示"确认清理"按钮（可以复用已有的按钮或创建新的）
+        # 这里复用主按钮，改为"确认清理"
+        self.main_action_btn.setText("确认清理")
+        self.main_action_btn.setIcon(None)  # 移除图标
+        self.main_action_btn.setEnabled(True)
+
+        self.logger.info(f"[UI] 保守模式：等待用户确认清理，{len(selected_items)} 项待清理")
+
+        # 保存选中的项目，供按钮点击时使用
+        self._pending_selected_items = selected_items
+
+        # 重新连接按钮到确认逻辑
+        try:
+            self.main_action_btn.clicked.disconnect()
+        except:
+            pass
+        self.main_action_btn.clicked.connect(self._on_confirmed_cleanup)
+
+    def _auto_execute_cleanup(self):
+        """全自动托管：自动执行清理（无需用户点击）"""
+        # AI 自动决策
+        auto_select_suspicious = self.config.auto_execute_suspicious
+        selected_items = self.cleaner.auto_select_items(auto_select_suspicious)
+
+        if not selected_items:
+            InfoBar.info("提示", "没有符合条件的项目可清理",
+                         parent=self, position=InfoBarPosition.TOP)
             return
 
-        self.logger.info(f"[UI] AI全自动托管清理: {len(selected_items)} 项")
+        total_size = sum(item.size for item in selected_items)
+        safe_count = sum(1 for i in selected_items if i.is_safe)
+        suspicious_count = sum(1 for i in selected_items if i.is_suspicious)
+
+        # 显示正在自动清理的提示
+        message = f"🤖 AI自动清理中... Safe={safe_count}, Suspicious={suspicious_count}"
+        self.status_label.setText(message)
+
+        self.logger.info(f"[UI] AI全自动托管: {len(selected_items)} 项，立即执行")
+
+        # 直接执行清理，无需确认
         self.cleaner.execute_auto_cleanup()
         self._set_ui_state('executing')
+
+    def _show_auto_managed_cleanup_dialog(self):
+        """显示全自动托管清理提示（使用非阻塞的 InfoBar + 按钮）"""
+        # AI 自动决策
+        auto_select_suspicious = self.config.auto_execute_suspicious
+        selected_items = self.cleaner.auto_select_items(auto_select_suspicious)
+
+        if not selected_items:
+            InfoBar.info("提示", "没有符合条件的项目可清理",
+                         parent=self, position=InfoBarPosition.TOP)
+            return
+
+        total_size = sum(item.size for item in selected_items)
+        safe_count = sum(1 for i in selected_items if i.is_safe)
+        suspicious_count = sum(1 for i in selected_items if i.is_suspicious)
+
+        # 使用 InfoBar 显示结果，而不是直接弹窗（避免 UI 冻结）
+        message = (
+            f"AI 复核完成: Safe={safe_count}, Suspicious={suspicious_count}, Dangerous=已跳过\n"
+            f"预计释放 {self._format_size(total_size)}"
+        )
+
+        # 显示带有确认按钮的 InfoBar
+        InfoBar.success(
+            title='AI 复核完成',
+            content=message,
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=0,  # 不自动关闭，等待用户操作
+            parent=self
+        )
+
+        # 确保 "AI 一键清理" 按钮可见并可以点击
+        if hasattr(self, 'auto_clean_btn'):
+            self.auto_clean_btn.setVisible(True)
+            self.main_action_btn.setText("手动清理")
+
+        self.logger.info(f"[UI] AI全自动托管: {len(selected_items)} 项可清理")
 
     def _update_item_card_ai_result(self, path: str, result: AIReviewResult):
         """更新项目卡片的AI复核结果显示"""
@@ -1563,6 +1665,7 @@ class SmartCleanupPage(QWidget):
 
     def _on_plan_ready(self, plan: CleanupPlan):
         """清理计划就绪回调"""
+        self.logger.info(f"[UI] _on_plan_ready 被调用: {plan.plan_id}, 项目数: {len(plan.items)}")
         self.current_plan = plan
         self._load_items_from_plan(plan)
         self._update_stats_from_plan(plan)
@@ -1592,12 +1695,43 @@ class SmartCleanupPage(QWidget):
         InfoBar.success("清理完成", success_text,
                        parent=self, position=InfoBarPosition.TOP, duration=5000)
 
-        # 更新预计释放为实际释放
-        for card, item in self.item_cards:
-            if item in result.cleared_items:
+        # 清理已删除的项目卡片（如果存在）
+        # 由于文件已被删除，移除对应的卡片
+        if self.current_plan and self.item_cards:
+            # 移除所有卡片，因为文件已被删除
+            for card, item in list(self.item_cards):
                 card.deleteLater()
-        self.item_cards = [x for x in self.item_cards if x[1] not in result.cleared_items]
+            self.item_cards.clear()
+
+        # 清空当前计划，因为文件已被处理
+        self.current_plan = None
         self._update_items_count()
+
+        # 恢复按钮到正常的主操作逻辑
+        self._restore_main_action_button()
+
+    def _restore_main_action_button(self):
+        """恢复主按钮到正常状态（开始扫描）"""
+        try:
+            self.main_action_btn.clicked.disconnect()
+        except:
+            pass
+        self.main_action_btn.clicked.connect(self._on_main_action)
+        self.main_action_btn.setText("开始扫描")
+        self.main_action_btn.setIcon(FluentIcon.SEARCH)
+
+    def _on_confirmed_cleanup(self):
+        """用户点击确认清理按钮（保守模式）"""
+        if not hasattr(self, '_pending_selected_items') or not self._pending_selected_items:
+            # 没有待清理项目，恢复按钮
+            self._restore_main_action_button()
+            return
+
+        self.logger.info(f"[UI] 用户确认清理: {len(self._pending_selected_items)} 项")
+        self.cleaner.execute_auto_cleanup()
+        self._set_ui_state('executing')
+        # 清空待清理项目
+        self._pending_selected_items = None
 
     def _on_error(self, error_msg: str):
         """错误回调"""
@@ -1768,34 +1902,24 @@ class SmartCleanupPage(QWidget):
 
     def _update_stats_from_plan(self, plan: CleanupPlan):
         """从清理计划更新统计"""
-        # 使用子控件更新方法
-        for widget in self.total_items_card.findChildren(StrongBodyLabel):
-            if widget.font().pointSize() >= 18:
-                widget.setText(str(len(plan.items)))
-                break
+        self.logger.info(f"[UI] 更新统计: 总数={len(plan.items)}, Safe={plan.safe_count}, "
+                         f"Suspicious={plan.suspicious_count}, Dangerous={plan.dangerous_count}")
+
+        # 使用 StatCard 的 set_value 方法直接更新
+        self.total_items_card.set_value(str(len(plan.items)))
 
         total_size = self._format_size(sum(i.size for i in plan.items))
-        for widget in self.total_size_card.findChildren(StrongBodyLabel):
-            if widget.font().pointSize() >= 18:
-                widget.setText(total_size)
-                break
+        self.total_size_card.set_value(total_size)
 
-        for widget, count in [
-            (self.safe_card, plan.safe_count),
-            (self.wary_card, plan.suspicious_count),
-            (self.dangerous_card, plan.dangerous_count)
-        ]:
-            for child in widget.findChildren(StrongBodyLabel):
-                if child.font().pointSize() >= 18:
-                    child.setText(str(count))
-                    break
+        self.safe_card.set_value(str(plan.safe_count))
+        self.wary_card.set_value(str(plan.suspicious_count))
+        self.dangerous_card.set_value(str(plan.dangerous_count))
 
-        for widget in self.freed_card.findChildren(StrongBodyLabel):
-            if widget.font().pointSize() >= 18:
-                widget.setText(self._format_size(plan.estimated_freed))
-                break
+        self.freed_card.set_value(self._format_size(plan.estimated_freed))
 
         self.ai_calls_label.setText(f"AI 调用次数: {plan.ai_call_count}")
+
+        self.logger.info(f"[UI] 统计更新完成: AI 调用次数={plan.ai_call_count}")
 
         # 更新缓存命中率
         try:
@@ -1810,18 +1934,12 @@ class SmartCleanupPage(QWidget):
     def _update_empty_stats(self):
         """更新空的统计信息"""
         try:
-            for widget, text in [
-                (self.total_items_card, "0"),
-                (self.total_size_card, "0 B"),
-                (self.safe_card, "0"),
-                (self.wary_card, "0"),
-                (self.dangerous_card, "0"),
-                (self.freed_card, "0 B"),
-            ]:
-                for child in widget.findChildren(StrongBodyLabel):
-                    if child.font().pointSize() >= 18:
-                        child.setText(text)
-                        break
+            self.total_items_card.set_value("0")
+            self.total_size_card.set_value("0 B")
+            self.safe_card.set_value("0")
+            self.wary_card.set_value("0")
+            self.dangerous_card.set_value("0")
+            self.freed_card.set_value("0 B")
 
             self.items_count_label.setText("等待扫描...")
             self.ai_calls_label.setText("AI 调用次数: 0")

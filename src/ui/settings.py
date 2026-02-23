@@ -328,6 +328,17 @@ class SettingsPage(QWidget):
         ai_layout.addLayout(ai_enabled_layout)
         ai_layout.addSpacing(12)
 
+        # AI 风险策略
+        ai_risk_layout = QHBoxLayout()
+        ai_risk_layout.addWidget(BodyLabel('AI 风险策略:'))
+        self.ai_risk_combo = ComboBox()
+        self.ai_risk_combo.addItems(['保守（确认后清理）', '激进（自动清理）'])
+        self.ai_risk_combo.currentIndexChanged.connect(self._on_ai_risk_changed)
+        ai_risk_layout.addWidget(self.ai_risk_combo)
+        ai_risk_layout.addStretch()
+        ai_layout.addLayout(ai_risk_layout)
+        ai_layout.addSpacing(12)
+
         # API URL
         api_url_layout = QHBoxLayout()
         api_url_layout.addWidget(BodyLabel('API URL:'))
@@ -433,6 +444,13 @@ class SettingsPage(QWidget):
         self.api_key_edit.setText(ai_config['api_key'])
         self.ai_model_edit.setText(ai_config['api_model'])
 
+        # AI 风险策略
+        ai_risk = self.config_mgr.get('ai_risk_policy', 'conservative')
+        if ai_risk == 'aggressive':
+            self.ai_risk_combo.setCurrentIndex(1)
+        else:
+            self.ai_risk_combo.setCurrentIndex(0)
+
         # AppData迁移功能
         appdata_migration_enabled = self.config_mgr.get('appdata_migration/enabled', False)
         self.appdata_migration_switch.setChecked(appdata_migration_enabled)
@@ -524,6 +542,13 @@ class SettingsPage(QWidget):
     def _on_ai_enabled_changed(self, checked: bool):
         """AI启用开关变更"""
         self.config_mgr.set_ai_config(enabled=checked)
+
+    def _on_ai_risk_changed(self, index: int):
+        """AI 风险策略变更 - 实时保存"""
+        # 0: 保守（需要确认）
+        # 1: 激进（自动清理）
+        risk_policy = 'aggressive' if index == 1 else 'conservative'
+        self.config_mgr.set('ai_risk_policy', risk_policy)
 
     def _on_ai_config_changed(self):
         """AI配置变更"""
