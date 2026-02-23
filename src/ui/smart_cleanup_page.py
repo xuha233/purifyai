@@ -1207,52 +1207,7 @@ class SmartCleanupPage(QWidget):
 
                 # 更新卡片样式
                 card.update_risk_style()
-
-                # 可选：添加AI结果标签到卡片
-                self._add_ai_result_to_card(card, result)
                 break
-
-    def _add_ai_result_to_card(self, card, result: AIReviewResult):
-        """将AI复核结果添加到卡片"""
-        # 获取卡片的布局
-        layout = card.layout()
-        if not layout:
-            return
-
-        # 检查是否已添加AI结果标签
-        card.has_ai_result = getattr(card, 'has_ai_result', False)
-        if card.has_ai_result:
-            return
-
-        # 找到最后一行（路径+大小行）
-        if layout.count() < 2:
-            return
-
-        # 创建AI结果标签
-        ai_text = f"AI: {result.ai_risk.value}"
-        ai_label = BodyLabel(ai_text)
-        risk_colors = {
-            RiskLevel.SAFE: '#28a745',
-            RiskLevel.SUSPICIOUS: '#ffc107',
-            RiskLevel.DANGEROUS: '#dc3545'
-        }
-        color = risk_colors.get(result.ai_risk, '#666')
-        ai_label.setStyleSheet(f'font-size: 10px; color: {color}; font-weight: 500;')
-        ai_label.setObjectName('ai_result_label')
-
-        # 找到第二行布局并添加标签
-        layout_item = layout.itemAt(1)
-        if layout_item and isinstance(layout_item.layout(), QHBoxLayout):
-            h_layout = layout_item.layout()
-            # 找到合适位置插入（大小区域之前）
-            for j in range(h_layout.count()):
-                item_at = h_layout.itemAt(j)
-                widget = item_at.widget()
-                if widget and "size" in str(type(widget)).lower():
-                    h_layout.insertWidget(j, ai_label)
-                    break
-
-        card.has_ai_result = True
 
     def toggle_ai(self, enabled: bool):
         """切换 AI 状态"""

@@ -911,7 +911,6 @@ class SmartCleaner(QObject):
         )
 
         # 转换 CleanupItem 为 ScanItem 用于复核
-        from .models.smart import ScanItem
         scan_items = [
             ScanItem(
                 path=item.path,
