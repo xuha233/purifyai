@@ -38,6 +38,8 @@ from core.smart_cleaner import (
 from core.rule_engine import RiskLevel
 from core.backup_manager import BackupManager, get_backup_manager
 from core.models_smart import BackupType
+from core.ai_review_models import AIReviewResult
+from ui.ai_review_widgets import ReviewProgressBar, ReviewSummaryCard, AIReviewCard
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -535,6 +537,9 @@ class SmartCleanupPage(QWidget):
         self.state = 'idle'  # idle, scanning, analyzing, preview, executing, completed, error
         self._scan_start_time = 0  # 扫描开始时间
 
+        # AI复核结果存储
+        self.ai_review_results: Dict[str, AIReviewResult] = {}
+
         # 连接信号
         self._connect_signals()
 
@@ -550,6 +555,12 @@ class SmartCleanupPage(QWidget):
         self.cleaner.plan_ready.connect(self._on_plan_ready)
         self.cleaner.execution_completed.connect(self._on_execution_completed)
         self.cleaner.error.connect(self._on_error)
+
+        # AI复核信号
+        self.cleaner.ai_review_progress.connect(self._on_ai_review_progress)
+        self.cleaner.ai_item_completed.connect(self._on_ai_item_completed)
+        self.cleaner.ai_item_failed.connect(self._on_ai_item_failed)
+        self.cleaner.ai_review_completed.connect(self._on_ai_review_complete)
 
     def init_ui(self):
         """初始化 UI"""
@@ -621,6 +632,17 @@ class SmartCleanupPage(QWidget):
         self.scan_info_card = ScanInfoCard()
         self.scan_info_card.setVisible(False)
         main_layout.addWidget(self.scan_info_card)
+
+        # ===== AI复核进度和摘要 =====
+        # AI复核进度条
+        self.ai_review_progress_bar = ReviewProgressBar()
+        self.ai_review_progress_bar.setVisible(False)
+        main_layout.addWidget(self.ai_review_progress_bar)
+
+        # AI复核摘要
+        self.ai_review_summary = ReviewSummaryCard()
+        self.ai_review_summary.setVisible(False)
+        main_layout.addWidget(self.ai_review_summary)
 
         # ========== 主体：三栏布局 ==========
         content_splitter = QSplitter(Qt.Horizontal)
@@ -768,6 +790,12 @@ class SmartCleanupPage(QWidget):
         self.auto_select_safe_btn.setEnabled(False)
         self.auto_select_safe_btn.setFixedHeight(36)
         layout.addWidget(self.auto_select_safe_btn)
+
+        self.ai_review_btn = PushButton(FluentIcon.ROBOT, "AI复核")
+        self.ai_review_btn.clicked.connect(self._on_ai_review_clicked)
+        self.ai_review_btn.setEnabled(False)
+        self.ai_review_btn.setFixedHeight(36)
+        layout.addWidget(self.ai_review_btn)
 
         self.clear_selection_btn = PushButton(FluentIcon.DELETE, "清空选择")
         self.clear_selection_btn.clicked.connect(self._clear_selection)
@@ -1093,6 +1121,139 @@ class SmartCleanupPage(QWidget):
         self.cleaner.execute_auto_cleanup()
         self._set_ui_state('executing')
 
+    # ========== AI 复核相关 ==========
+
+    def _on_ai_review_clicked(self):
+        """AI 复核按钮点击事件"""
+        if not self.current_plan:
+            InfoBar.warning("提示", "没有可复核的项目",
+                        parent=self, position=InfoBarPosition.TOP)
+            return
+
+        # 检查 AI 配置
+        from core.config_manager import get_config_manager
+        config_mgr = get_config_manager()
+        ai_cfg = config_mgr.get_ai_config()
+
+        if not ai_cfg.get('enabled') or not ai_cfg.get('api_key') or not ai_cfg.get('api_url'):
+            InfoBar.warning("AI未配置", "请在设置中配置API密钥并启用AI",
+                          parent=self, position=InfoBarPosition.TOP, duration=3000)
+            return
+
+        self.logger.info(f"[UI] 开始AI复核: {len(self.current_plan.items)} 项")
+
+        # 显示 AI 复核组件
+        self.ai_review_progress_bar.setVisible(True)
+        self.ai_review_summary.setVisible(True)
+        self.ai_review_btn.setEnabled(False)
+        self.ai_review_btn.setText("复核中...")
+
+        # 启动 AI 复核
+        success = self.cleaner.start_ai_review()
+        if not success:
+            self.ai_review_progress_bar.setVisible(False)
+            self.ai_review_summary.setVisible(False)
+            self.ai_review_btn.setEnabled(True)
+            self.ai_review_btn.setText("AI复核")
+
+    def _on_ai_review_progress(self, status):
+        """AI 复核进度回调"""
+        self.ai_review_progress_bar.update_status(status)
+        self.ai_review_summary.update_summary(status)
+
+    def _on_ai_item_completed(self, path: str, result: AIReviewResult):
+        """AI 复核项目完成回调"""
+        self.ai_review_results[path] = result
+        self.logger.debug(f"[UI] AI复核完成: {os.path.basename(path)} -> {result.ai_risk.value}")
+
+        # 更新对应卡片的显示
+        self._update_item_card_ai_result(path, result)
+
+    def _on_ai_item_failed(self, path: str, error: str):
+        """AI 复核项目失败回调"""
+        self.logger.warning(f"[UI] AI复核失败: {os.path.basename(path)} -> {error}")
+
+    def _on_ai_review_complete(self, results: dict):
+        """AI 复核批次完成回调"""
+        self.ai_review_btn.setEnabled(True)
+        self.ai_review_btn.setText("AI复核")
+
+        status_summary = f'AI复核完成: 成功 {len(results)} 项'
+        self.logger.info(f"[UI] {status_summary}")
+
+        # 更新计划并重新加载项目
+        if self.current_plan:
+            self._load_items_from_plan(self.current_plan)
+
+        InfoBar.success(
+            '完成',
+            f'AI复核完成: {len(results)} 项已重新评估',
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+            parent=self
+        )
+
+        # 延迟隐藏进度条
+        QTimer.singleShot(2000, lambda: self.ai_review_progress_bar.setVisible(False))
+
+    def _update_item_card_ai_result(self, path: str, result: AIReviewResult):
+        """更新项目卡片的AI复核结果显示"""
+        for i, (card, item) in enumerate(self.item_cards):
+            if item.path == path:
+                # 更新数据模型
+                item.ai_risk = result.ai_risk
+
+                # 更新卡片样式
+                card.update_risk_style()
+
+                # 可选：添加AI结果标签到卡片
+                self._add_ai_result_to_card(card, result)
+                break
+
+    def _add_ai_result_to_card(self, card, result: AIReviewResult):
+        """将AI复核结果添加到卡片"""
+        # 获取卡片的布局
+        layout = card.layout()
+        if not layout:
+            return
+
+        # 检查是否已添加AI结果标签
+        card.has_ai_result = getattr(card, 'has_ai_result', False)
+        if card.has_ai_result:
+            return
+
+        # 找到最后一行（路径+大小行）
+        if layout.count() < 2:
+            return
+
+        # 创建AI结果标签
+        ai_text = f"AI: {result.ai_risk.value}"
+        ai_label = BodyLabel(ai_text)
+        risk_colors = {
+            RiskLevel.SAFE: '#28a745',
+            RiskLevel.SUSPICIOUS: '#ffc107',
+            RiskLevel.DANGEROUS: '#dc3545'
+        }
+        color = risk_colors.get(result.ai_risk, '#666')
+        ai_label.setStyleSheet(f'font-size: 10px; color: {color}; font-weight: 500;')
+        ai_label.setObjectName('ai_result_label')
+
+        # 找到第二行布局并添加标签
+        layout_item = layout.itemAt(1)
+        if layout_item and isinstance(layout_item.layout(), QHBoxLayout):
+            h_layout = layout_item.layout()
+            # 找到合适位置插入（大小区域之前）
+            for j in range(h_layout.count()):
+                item_at = h_layout.itemAt(j)
+                widget = item_at.widget()
+                if widget and "size" in str(type(widget)).lower():
+                    h_layout.insertWidget(j, ai_label)
+                    break
+
+        card.has_ai_result = True
+
     def toggle_ai(self, enabled: bool):
         """切换 AI 状态"""
         self.config.enable_ai = enabled
@@ -1346,8 +1507,13 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(False)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(False)
+            self.ai_review_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
             self.status_label.setText("准备就绪，请选择扫描类型开始")
+
+            # 隐藏 AI 复核组件
+            self.ai_review_progress_bar.setVisible(False)
+            self.ai_review_summary.setVisible(False)
 
         elif state == 'scanning':
             self.phase_indicator.update_phase(1)
@@ -1363,7 +1529,12 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(True)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(False)
+            self.ai_review_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
+
+            # 隐藏 AI 复核组件
+            self.ai_review_progress_bar.setVisible(False)
+            self.ai_review_summary.setVisible(False)
 
         elif state == 'analyzing':
             self.phase_indicator.update_phase(2)
@@ -1378,6 +1549,13 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.auto_select_safe_btn.setEnabled(False)
+            self.ai_review_btn.setEnabled(False)
+            self.clear_selection_btn.setEnabled(False)
+
+            # 隐藏 AI 复核组件
+            self.ai_review_progress_bar.setVisible(False)
+            self.ai_review_summary.setVisible(False)
 
         elif state == 'preview':
             self.phase_indicator.update_phase(3)
@@ -1388,8 +1566,12 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(False)
             self.auto_clean_btn.setVisible(True)  # 显示 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(True)
+            self.ai_review_btn.setEnabled(True)
             self.clear_selection_btn.setEnabled(True)
             self.status_label.setText(f"发现 {len(self.current_plan.items) if self.current_plan else 0} 个可清理项")
+
+            # 保持 AI 复核组件状态（可能在复核中）
+            # 不强制隐藏，让状态保持不变
 
         elif state == 'executing':
             self.phase_indicator.update_phase(4)
@@ -1399,7 +1581,12 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(True)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(False)
+            self.ai_review_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
+
+            # 隐藏 AI 复核组件
+            self.ai_review_progress_bar.setVisible(False)
+            self.ai_review_summary.setVisible(False)
 
         elif state == 'completed':
             self.phase_indicator.update_phase(5)
@@ -1410,8 +1597,13 @@ class SmartCleanupPage(QWidget):
             self.cancel_btn.setVisible(False)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(True if self.item_cards else False)
+            self.ai_review_btn.setEnabled(True if self.item_cards else False)
             self.clear_selection_btn.setEnabled(True if self.item_cards else False)
             self.status_label.setText("清理完成")
+
+            # 隐藏 AI 复核组件
+            self.ai_review_progress_bar.setVisible(False)
+            self.ai_review_summary.setVisible(False)
 
         elif state == 'error':
             self.phase_indicator.update_phase(0)
@@ -1419,7 +1611,11 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
             self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
+            self.ai_review_btn.setEnabled(False)
             self.status_label.setText("发生错误")
+
+            # 显示 AI 复核组件（可能正在复核中）
+            # 不强制隐藏，让状态保持不变
 
     def _load_items_from_plan(self, plan: CleanupPlan):
         """从清理计划加载项目"""

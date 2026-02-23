@@ -40,6 +40,9 @@ from .models_smart import (
     ScanProgress, CleanupStatus
 )
 from .ai_analyzer import AIAnalyzer, CostControlConfig, CostControlMode
+from .ai_review_task import AIReviewWorker, AIReviewOrchestrator, AIReviewStatus
+from .ai_review_models import ReviewConfig, AIReviewResult
+from .ai_client import AIClient, AIConfig
 from .backup_manager import BackupManager, get_backup_manager
 from .execution_engine import (
     SmartCleanupExecutor, ExecutionConfig, get_executor
@@ -513,6 +516,12 @@ class SmartCleaner(QObject):
     # 错误信号
     error = pyqtSignal(str)                   # error_message
 
+    # AI 复核信号
+    ai_review_progress = pyqtSignal(object)   # AIReviewStatus
+    ai_item_completed = pyqtSignal(str, object)  # path, AIReviewResult
+    ai_item_failed = pyqtSignal(str, str)    # path, error
+    ai_review_completed = pyqtSignal(dict)  # results dict
+
     def __init__(
         self,
         config: SmartCleanConfig = None,
@@ -536,6 +545,11 @@ class SmartCleaner(QObject):
         # 组件初始化
         self.ai_analyzer = AIAnalyzer(cost_config=self._get_ai_cost_config())
         self.executor = get_executor(backup_mgr=self.backup_mgr, db=self.db)
+
+        # AI复核组件
+        self.ai_review_worker: Optional[AIReviewWorker] = None
+        self.ai_review_orchestrator: Optional[AIReviewOrchestrator] = None
+        self.ai_review_results: Dict[str, AIReviewResult] = {}  # path -> AIReviewResult
 
         # 状态管理
         self.current_phase = SmartCleanPhase.IDLE
@@ -835,6 +849,125 @@ class SmartCleaner(QObject):
             return False
 
         return self.execute_cleanup(items_to_clean)
+
+    def start_ai_review(
+        self,
+        items: Optional[List[CleanupItem]] = None,
+        ai_config: Optional[AIConfig] = None
+    ) -> bool:
+        """
+        开始 AI 复核任务
+
+        Args:
+            items: 要复核的项目列表，None 表示复核当前计划中的所有项目
+            ai_config: AI 配置，None 表示使用默认配置
+
+        Returns:
+            是否成功启动
+        """
+        if not self.current_plan:
+            self.logger.warning("[SMART_CLEAN] AI 复核：无清理计划")
+            return False
+
+        # 获取要复核的项目
+        items_to_review = items or self.current_plan.items
+
+        # 过滤：只复核未被AI评估过的项目
+        items_with_ai = [
+            item for item in items_to_review
+            if item.path not in self.ai_review_results
+        ]
+
+        if not items_with_ai:
+            self.logger.info("[SMART_CLEAN] AI 复核：所有项目已被评估")
+            return False
+
+        # 获取 AI 配置
+        if ai_config is None:
+            from core.config_manager import get_config_manager
+            config_mgr = get_config_manager()
+            ai_cfg = config_mgr.get_ai_config()
+            ai_config = AIConfig(
+                api_url=ai_cfg['api_url'],
+                api_key=ai_cfg['api_key'],
+                model=ai_cfg['api_model']
+            )
+
+        # 只在有 AI 配置时才启动
+        if not ai_config.api_key or not ai_config.api_url:
+            self.logger.warning("[SMART_CLEAN] AI 复核：AI 配置不完整")
+            return False
+
+        # 取消现有任务
+        self.cancel_ai_review()
+
+        # 创建 AI 客户端和编排器
+        ai_client = AIClient(ai_config)
+
+        self.ai_review_orchestrator = AIReviewOrchestrator(
+            config=ReviewConfig(max_concurrent=1, max_retries=2),
+            ai_client=ai_client,
+            parent=self
+        )
+
+        # 转换 CleanupItem 为 ScanItem 用于复核
+        from .models.smart import ScanItem
+        scan_items = [
+            ScanItem(
+                path=item.path,
+                description=f"文件: {os.path.basename(item.path)}",
+                size=item.size,
+                item_type='file',
+                risk_level='unknown'
+            )
+            for item in items_with_ai
+        ]
+
+        # 创建 AI 复核线程
+        self.ai_review_worker = self.ai_review_orchestrator.start_review(
+            items=scan_items,
+            on_progress=self._on_ai_review_progress,
+            on_item_completed=self._on_ai_item_completed,
+            on_item_failed=self._on_ai_item_failed,
+            on_complete=self._on_ai_review_complete
+        )
+
+        return True
+
+    def cancel_ai_review(self):
+        """取消 AI 复核任务"""
+        if self.ai_review_orchestrator:
+            self.ai_review_orchestrator.cancel_review()
+
+        if self.ai_review_worker:
+            self.ai_review_worker.cancel()
+
+    def _on_ai_review_progress(self, status: AIReviewStatus):
+        """AI 复核进度回调"""
+        self.ai_review_progress.emit(status)
+
+    def _on_ai_item_completed(self, path: str, result: AIReviewResult):
+        """AI 复核项目完成回调"""
+        self.ai_review_results[path] = result
+
+        # 更新 CleanupItem 的 ai_risk
+        if self.current_plan:
+            for item in self.current_plan.items:
+                if item.path == path:
+                    item.ai_risk = result.ai_risk
+                    break
+
+        self.ai_item_completed.emit(path, result)
+
+    def _on_ai_item_failed(self, path: str, error: str):
+        """AI 复核项目失败回调"""
+        self.logger.warning(f"[SMART_CLEAN] AI 复核失败: {path}, 错误: {error}")
+        self.ai_item_failed.emit(path, error)
+
+    def _on_ai_review_complete(self, results: dict):
+        """AI 复核批次完成回调"""
+        self.logger.info(f"[SMART_CLEAN] AI 复核完成: {len(results)} 项")
+        self.ai_review_completed.emit(results)
 
 
 # 便利函数
