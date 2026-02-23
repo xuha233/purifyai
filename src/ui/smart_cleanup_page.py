@@ -676,12 +676,13 @@ class SmartCleanupPage(QWidget):
         self.status_label.setStyleSheet('color: #666; font-size: 13px;')
         header_layout.addWidget(self.status_label)
 
+        # 先添加header_layout到main_layout
+        main_layout.addLayout(header_layout)
+
         # ===== 扫描进度状态卡 =====
         self.scan_info_card = ScanInfoCard()
         self.scan_info_card.setVisible(False)
         main_layout.addWidget(self.scan_info_card)
-
-        main_layout.addLayout(header_layout)
 
         # ========== 主体：三栏布局 ==========
         content_splitter = QSplitter(Qt.Horizontal)
