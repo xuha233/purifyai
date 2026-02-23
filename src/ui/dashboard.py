@@ -101,6 +101,10 @@ class DashboardPage(QWidget):
         self.history_btn = self._create_quick_btn('清理历史', FluentIcon.HISTORY, 'history')
         ops_layout.addWidget(self.history_btn)
 
+        # 智能体中心按钮（新增 - 醒目显示）
+        self.agent_hub_btn = self._create_agent_hub_btn()
+        ops_layout.addWidget(self.agent_hub_btn)
+
         ops_layout.addStretch()
         center_layout.addWidget(main_ops_card, stretch=1)
 
@@ -323,6 +327,60 @@ class DashboardPage(QWidget):
         layout.addStretch()
 
         card.mousePressEvent = lambda e: self.navigate_requested.emit(route)
+        return card
+
+    def _create_agent_hub_btn(self):
+        """创建智能体中心入口按钮（醒目样式）"""
+        card = SimpleCardWidget()
+        card.setStyleSheet('''
+            SimpleCardWidget {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                           stop:0 #0078D4, stop:1 #0096c7);
+                border: none;
+                border-radius: 8px;
+            }
+            SimpleCardWidget:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                           stop:0 #106ebe, stop:1 #00a8d6);
+                border: none;
+            }
+        ''')
+        card.setFixedHeight(44)
+        card.setCursor(Qt.PointingHandCursor)
+
+        layout = QHBoxLayout(card)
+        layout.setContentsMargins(14, 0, 14, 0)
+
+        i = IconWidget(FluentIcon.ROBOT)
+        i.setFixedSize(20, 20)
+        i.setStyleSheet('color: white;')
+        layout.addWidget(i)
+
+        l = BodyLabel('启动智能体')
+        l.setStyleSheet('font-size: 13px; color: white; font-weight: 600;')
+        layout.addWidget(l)
+
+        ai_badge = QLabel('AI')
+        ai_badge.setStyleSheet('''
+            QLabel {
+                background: rgba(255, 255, 255, 0.25);
+                color: white;
+                border-radius: 3px;
+                padding: 2px 6px;
+                font-size: 9px;
+                font-weight: bold;
+            }
+        ''')
+        layout.addWidget(ai_badge)
+
+        layout.addStretch()
+
+        arrow = IconWidget(FluentIcon.CHEVRIR_RIGHT)
+        arrow.setFixedSize(14, 14)
+        arrow.setStyleSheet('color: white; opacity: 0.8;')
+        layout.addWidget(arrow)
+
+        card.mousePressEvent = lambda e: self.navigate_requested.emit('agentHub')
         return card
 
     def _create_stat_item(self, label, value_label):

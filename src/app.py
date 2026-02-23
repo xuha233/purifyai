@@ -21,6 +21,7 @@ from ui.recovery_dialog import RecoveryDialog
 from ui.recovery_page import RecoveryPage
 from ui.developer_console import DeveloperConsolePage
 from ui.cleanup_report_page import CleanupReportPage
+from ui.agent_hub_page import AgentHubPage  # 智能体中心页面
 
 from ui.system_tray import SystemTray
 from ui.windows_notification import WindowsNotification
@@ -106,6 +107,7 @@ class PurifyAIApp(QWidget):
 
     def init_navigation(self):
         self.dashboard_page = DashboardPage(self)
+        self.agent_hub_page = AgentHubPage()  # 智能体中心页面（新增）
         self.system_cleaner_page = SystemCleanerPage()
         self.browser_cleaner_page = BrowserCleanerPage()
         self.custom_cleaner_page = CustomCleanerPage()
@@ -116,6 +118,7 @@ class PurifyAIApp(QWidget):
         self.cleanup_report_page = CleanupReportPage()
 
         self.stacked_widget.addWidget(self.dashboard_page)
+        self.stacked_widget.addWidget(self.agent_hub_page)  # 智能体中心（新增）
         self.stacked_widget.addWidget(self.system_cleaner_page)
         self.stacked_widget.addWidget(self.browser_cleaner_page)
         self.stacked_widget.addWidget(self.custom_cleaner_page)
@@ -130,6 +133,14 @@ class PurifyAIApp(QWidget):
             icon=FluentIcon.HOME,
             text="首页",
             onClick=lambda: self.navigate_to("dashboard", self.dashboard_page)
+        )
+
+        # 智能体中心 - 核心页面（新增，放在首页之后）
+        self.navigation.addItem(
+            routeKey="agentHub",
+            icon=FluentIcon.GLOBE,
+            text="智能体中心",
+            onClick=lambda: self.navigate_to("agentHub", self.agent_hub_page)
         )
 
         self.navigation.addItem(
@@ -274,7 +285,9 @@ class PurifyAIApp(QWidget):
 
     def on_dashboard_navigate(self, route_key):
         """处理仪表盘的导航请求"""
-        if route_key == "systemCleaner":
+        if route_key == "agentHub":
+            self.navigate_to("agentHub", self.agent_hub_page)
+        elif route_key == "systemCleaner":
             self.navigate_to("systemCleaner", self.system_cleaner_page)
         elif route_key == "browserCleaner":
             self.navigate_to("browserCleaner", self.browser_cleaner_page)
