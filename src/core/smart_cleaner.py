@@ -151,37 +151,24 @@ class ScannerAdapter(QThread):
                 self.logger = get_logger(__name__)
 
             scanner_type = type(self.scanner).__name__
-            debug_event('INFO', 'ScannerAdapter', 'start_scan',
-                       '开始扫描',
-                       scanner_type=scanner_type)
-
             self._is_running = True
             self.logger.info(f"[ScannerAdapter] start_scan 被调用, scanner类型: {scanner_type}")
 
             if hasattr(self.scanner, 'start_scan'):
                 self.logger.debug("[ScannerAdapter] 调用 scanner.start_scan()")
-                debug_event('DEBUG', 'ScannerAdapter', 'start_scan',
-                           '调用 scanner.start_scan()')
                 self.scanner.start_scan()
             elif hasattr(self.scanner, 'start') and callable(getattr(self.scanner, 'start')):
                 self.logger.debug("[ScannerAdapter] 调用 scanner.start()")
-                debug_event('DEBUG', 'ScannerAdapter', 'start_scan',
-                           '调用 scanner.start()')
                 self.scanner.start()
             elif hasattr(self.scanner, 'scan') and callable(getattr(self.scanner, 'scan')):
                 self.logger.debug("[ScannerAdapter] 调用 scanner.scan()")
-                debug_event('DEBUG', 'ScannerAdapter', 'start_scan',
-                           '调用 scanner.scan()')
                 self.scanner.scan()
             else:
                 self.logger.warning(f"[ScannerAdapter] scanner 没有 start 方法: {type(self.scanner)}")
-                debug_event('WARNING', 'ScannerAdapter', 'start_scan',
-                           'Scanner没有start方法',
-                           scanner_type=scanner_type)
 
             self.logger.info(f"[ScannerAdapter] start_scan 完成, is_running={self._is_running}")
         except Exception as e:
-            debug_exception('ScannerAdapter', 'start_scan', '启动扫描异常', exc_info=sys.exc_info())
+            self.logger.error(f"[ScannerAdapter] 启动扫描异常: {str(e)}")
             self.error.emit(f'启动扫描失败: {str(e)}')
             self._is_running = False
 
@@ -196,10 +183,6 @@ class ScannerAdapter(QThread):
     def is_running(self):
         # 返回内部状态，而不是scanner的is_running
         # 这样可以确保ScanThread能正确检测完成状态
-        debug_event('DEBUG', 'ScannerAdapter', 'is_running',
-                   '检查运行状态',
-                   running=self._is_running,
-                   scanner_running=getattr(self.scanner, 'is_running', 'N/A'))
         return self._is_running
 
     @property

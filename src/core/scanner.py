@@ -298,7 +298,7 @@ class SystemScanner(QObject):
         self.risk_assessor.reload_ai_config()
 
     def start_scan(self, scan_types: List[str] = None):
-        """Start scanning system directories
+        """Start scanning system directories (async)
 
         Args:
             scan_types: List of scan types to perform. If None, scan all.
@@ -326,6 +326,32 @@ class SystemScanner(QObject):
             daemon=True
         )
         self.scan_thread.start()
+
+    def scan_sync(self, scan_types: List[str] = None) -> list:
+        """扫描系统目录（同步版本，直接在调用线程中执行）
+
+        Args:
+            scan_types: List of scan types to perform. If None, scan all.
+                      Types: 'temp', 'prefetch', 'logs', 'update_cache'
+
+        Returns:
+            List of ScanItems
+        """
+        if scan_types is None:
+            scan_types = ['temp', 'prefetch', 'logs', 'update_cache']
+
+        logger.info(f"[扫描:SYNC] 开始同步系统扫描: {', '.join(scan_types)}")
+
+        self.is_running = True
+        self.is_cancelled = False
+        self.scan_results = []
+
+        try:
+            # 直接执行扫描逻辑（在新线程中）
+            self._scan_thread(scan_types)
+            return self.scan_results
+        finally:
+            self.is_running = False
 
     def cancel_scan(self):
         """Cancel current scan"""
