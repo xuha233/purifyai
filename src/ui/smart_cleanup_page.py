@@ -1179,28 +1179,34 @@ class SmartCleanupPage(QWidget):
 
     def _on_ai_review_complete(self, results: dict):
         """AI 复核批次完成回调"""
-        self.ai_review_btn.setEnabled(True)
-        self.ai_review_btn.setText("AI复核")
+        try:
+            self.ai_review_btn.setEnabled(True)
+            self.ai_review_btn.setText("AI复核")
 
-        status_summary = f'AI复核完成: 成功 {len(results)} 项'
-        self.logger.info(f"[UI] {status_summary}")
+            status_summary = f'AI复核完成: 成功 {len(results)} 项'
+            self.logger.info(f"[UI] {status_summary}")
 
-        # 更新计划并重新加载项目
-        if self.current_plan:
-            self._load_items_from_plan(self.current_plan)
+            # 更新计划并重新加载项目
+            if self.current_plan:
+                self._load_items_from_plan(self.current_plan)
 
-        InfoBar.success(
-            '完成',
-            f'AI复核完成: {len(results)} 项已重新评估',
-            orient=Qt.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=3000,
-            parent=self
-        )
+            InfoBar.success(
+                '完成',
+                f'AI复核完成: {len(results)} 项已重新评估',
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=3000,
+                parent=self
+            )
 
-        # 延迟隐藏进度条
-        QTimer.singleShot(2000, lambda: self.ai_review_progress_bar.setVisible(False))
+            # 延迟隐藏进度条
+            QTimer.singleShot(2000, lambda: self.ai_review_progress_bar.setVisible(False))
+        except Exception as e:
+            self.logger.error(f"[UI] AI复核完成回调异常: {e}")
+            self.ai_review_btn.setEnabled(True)
+            self.ai_review_btn.setText("AI复核")
+            self.ai_review_progress_bar.setVisible(False)
 
     def _update_item_card_ai_result(self, path: str, result: AIReviewResult):
         """更新项目卡片的AI复核结果显示"""
@@ -1283,10 +1289,22 @@ class SmartCleanupPage(QWidget):
 
     def _clear_items(self):
         """清空项目列表"""
-        for card, _ in self.item_cards:
-            card.deleteLater()
-        self.item_cards.clear()
-        self._update_empty_stats()
+        try:
+            # 创建卡片的临时副本，避免在迭代时修改列表
+            cards_to_delete = list(self.item_cards)
+            for card, _ in cards_to_delete:
+                # 只删除存在的卡片
+                try:
+                    if card and hasattr(card, 'deleteLater'):
+                        card.deleteLater()
+                except Exception:
+                    pass
+            self.item_cards.clear()
+            self._update_empty_stats()
+        except Exception as e:
+            self.logger.warning(f"[UI] 清空项目列表失败: {e}")
+            self.item_cards.clear()
+            self._update_empty_stats()
 
     # ========== SmartCleaner 信号回调 ==========
 
@@ -1583,17 +1601,20 @@ class SmartCleanupPage(QWidget):
 
     def _load_items_from_plan(self, plan: CleanupPlan):
         """从清理计划加载项目"""
-        self._clear_items()
+        try:
+            self._clear_items()
 
-        for item in plan.items:
-            card = CleanupItemCard(item)
-            self.items_layout.insertWidget(self.items_layout.count() - 1, card)
-            self.item_cards.append((card, item))
+            for item in plan.items:
+                card = CleanupItemCard(item)
+                self.items_layout.insertWidget(self.items_layout.count() - 1, card)
+                self.item_cards.append((card, item))
 
-            # 默认不选任何项目
-            card.checkbox.setChecked(False)
+                # 默认不选任何项目
+                card.checkbox.setChecked(False)
 
-        self._update_items_count()
+            self._update_items_count()
+        except Exception as e:
+            self.logger.error(f"[UI] 加载项目失败: {e}")
 
     def _update_stats_from_plan(self, plan: CleanupPlan):
         """从清理计划更新统计"""
@@ -1638,28 +1659,34 @@ class SmartCleanupPage(QWidget):
 
     def _update_empty_stats(self):
         """更新空的统计信息"""
-        for widget, text in [
-            (self.total_items_card, "0"),
-            (self.total_size_card, "0 B"),
-            (self.safe_card, "0"),
-            (self.wary_card, "0"),
-            (self.dangerous_card, "0"),
-            (self.freed_card, "0 B"),
-        ]:
-            for child in widget.findChildren(StrongBodyLabel):
-                if child.font().pointSize() >= 18:
-                    child.setText(text)
-                    break
+        try:
+            for widget, text in [
+                (self.total_items_card, "0"),
+                (self.total_size_card, "0 B"),
+                (self.safe_card, "0"),
+                (self.wary_card, "0"),
+                (self.dangerous_card, "0"),
+                (self.freed_card, "0 B"),
+            ]:
+                for child in widget.findChildren(StrongBodyLabel):
+                    if child.font().pointSize() >= 18:
+                        child.setText(text)
+                        break
 
-        self.items_count_label.setText("等待扫描...")
-        self.ai_calls_label.setText("AI 调用次数: 0")
-        self.ai_cache_label.setText("缓存命中率: -")
+            self.items_count_label.setText("等待扫描...")
+            self.ai_calls_label.setText("AI 调用次数: 0")
+            self.ai_cache_label.setText("缓存命中率: -")
+        except Exception as e:
+            self.logger.warning(f"[UI] 更新空统计信息失败: {e}")
 
     def _update_items_count(self):
         """更新项目计数"""
-        visible_count = sum(1 for card, _ in self.item_cards if card.isVisible())
-        total_count = len(self.item_cards)
-        self.items_count_label.setText(f"显示 {visible_count} / {total_count} 个项目")
+        try:
+            visible_count = sum(1 for card, _ in self.item_cards if card.isVisible())
+            total_count = len(self.item_cards)
+            self.items_count_label.setText(f"显示 {visible_count} / {total_count} 个项目")
+        except Exception as e:
+            self.logger.warning(f"[UI] 更新项目计数失败: {e}")
 
     # ========== 工具方法 ==========
 
