@@ -277,17 +277,19 @@ class ScanInfoCard(SimpleCardWidget):
 class CleanupItemCard(SimpleCardWidget):
     """清理项目卡片"""
 
-    def __init__(self, item: CleanupItem, parent=None):
+    def __init__(self, item: CleanupItem, ai_review_result: Optional[AIReviewResult] = None, parent=None):
         super().__init__(parent)
         self.item = item
+        self.ai_review_result = ai_review_result
         self.is_selected = False
         self.is_hovered = False
 
         self.setMinimumHeight(70)
-        self.setMaximumHeight(90)
+        self.setMaximumHeight(110)  # 增加高度以容纳AI标签
 
         self.init_ui()
         self.update_risk_style()
+        self.update_ai_tags()
 
     def init_ui(self):
         """初始化 UI"""
@@ -327,10 +329,16 @@ class CleanupItemCard(SimpleCardWidget):
         self.risk_label.setStyleSheet('font-size: 10px; padding: 3px 8px; border-radius: 4px;')
         name_row.addWidget(self.risk_label)
 
+        # AI 置信度标签
+        self.confidence_label = BodyLabel("")
+        self.confidence_label.setStyleSheet('font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #e3f2fd; color: #1976d2;')
+        self.confidence_label.setVisible(False)
+        name_row.addWidget(self.confidence_label)
+
         name_row.addStretch()
         info_layout.addLayout(name_row)
 
-        # 路径 + 大小
+        # 路径 + 大小行
         detail_row = QHBoxLayout()
         detail_row.setSpacing(8)
 
@@ -349,6 +357,27 @@ class CleanupItemCard(SimpleCardWidget):
         size_label = StrongBodyLabel(self._format_size(self.item.size))
         size_label.setStyleSheet('font-size: 12px; color: #666;')
         detail_row.addWidget(size_label)
+
+        info_layout.addLayout(detail_row)
+
+        # AI 信息行
+        self.ai_info_row = QHBoxLayout()
+        self.ai_info_row.setSpacing(8)
+
+        # 软件名称
+        self.software_label = BodyLabel("")
+        self.software_label.setStyleSheet('font-size: 10px; color: #666;')
+        self.ai_info_row.addWidget(self.software_label)
+
+        # 清理建议
+        self.suggestion_label = BodyLabel("")
+        self.suggestion_label.setStyleSheet('font-size: 10px; color: #9e9e9e;')
+        self.ai_info_row.addWidget(self.suggestion_label)
+
+        self.ai_info_row.addStretch()
+        info_layout.addLayout(self.ai_info_row)
+
+        layout.addLayout(info_layout)
 
         # 备份类型标签
         backup_types = {
@@ -372,10 +401,7 @@ class CleanupItemCard(SimpleCardWidget):
                 backup_label.setStyleSheet('font-size: 10px; color: #66bb6a; padding: 2px 6px; background: #e8f5e9; border-radius: 3px;')
             else:
                 backup_label.setStyleSheet('font-size: 10px; color: #42a5f5; padding: 2px 6px; background: #e3f2fd; border-radius: 3px;')
-            detail_row.addWidget(backup_label)
-
-        info_layout.addLayout(detail_row)
-        layout.addLayout(info_layout)
+            layout.addWidget(backup_label)
 
     def update_risk_style(self):
         """更新风险风格"""
@@ -387,7 +413,8 @@ class CleanupItemCard(SimpleCardWidget):
         risk_labels = {
             RiskLevel.SAFE: '安全',
             RiskLevel.SUSPICIOUS: '可疑',
-            RiskLevel.DANGEROUS: '危险'
+            RiskLevel.DANGEROUS: '危险',
+            RiskLevel.UNKNOWN: '未知'
         }
 
         # 获取风险对应的颜色，如果未知则使用wary
@@ -399,6 +426,45 @@ class CleanupItemCard(SimpleCardWidget):
             font-size: 10px; padding: 3px 8px; border-radius: 4px;
             background: {bg_color}; color: {fg_color}; font-weight: 500;
         ''')
+
+    def update_ai_tags(self):
+        """更新 AI 分析结果标签"""
+        if self.ai_review_result:
+            # 显示置信度
+            if hasattr(self.ai_review_result, 'confidence'):
+                confidence_pct = int(self.ai_review_result.confidence * 100)
+                self.confidence_label.setText(f"AI: {confidence_pct}%")
+                self.confidence_label.setVisible(True)
+
+                # 根据置信度设置颜色
+                if self.ai_review_result.confidence >= 0.8:
+                    self.confidence_label.setStyleSheet('font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #e8f5e9; color: #2e7d32;')
+                elif self.ai_review_result.confidence >= 0.5:
+                    self.confidence_label.setStyleSheet('font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #fff3e0; color: #ef6c00;')
+                else:
+                    self.confidence_label.setStyleSheet('font-size: 9px; padding: 2px 6px; border-radius: 3px; background: #ffe0b2; color: #f57c00;')
+
+            # 显示软件名称
+            if hasattr(self.ai_review_result, 'software_name') and self.ai_review_result.software_name:
+                self.software_label.setText(f"📦 {self.ai_review_result.software_name}")
+                self.software_label.setVisible(True)
+            else:
+                self.software_label.setVisible(False)
+
+            # 显示清理建议
+            if hasattr(self.ai_review_result, 'cleanup_suggestion') and self.ai_review_result.cleanup_suggestion:
+                suggestion = self.ai_review_result.cleanup_suggestion
+                # 截断过长的建议
+                if len(suggestion) > 30:
+                    suggestion = suggestion[:30] + '...'
+                self.suggestion_label.setText(f"💡 {suggestion}")
+                self.suggestion_label.setVisible(True)
+            else:
+                self.suggestion_label.setVisible(False)
+        else:
+            self.confidence_label.setVisible(False)
+            self.software_label.setVisible(False)
+            self.suggestion_label.setVisible(False)
 
     def on_check_changed(self, state):
         """复选框状态变化"""
@@ -1189,6 +1255,8 @@ class SmartCleanupPage(QWidget):
             # 更新计划并重新加载项目
             if self.current_plan:
                 self._load_items_from_plan(self.current_plan)
+                # 修复：更新统计信息（因为 ai_risk 可能已经改变）
+                self._update_stats_from_plan(self.current_plan)
 
             # 延迟隐藏进度条
             QTimer.singleShot(2000, lambda: self.ai_review_progress_bar.setVisible(False))
@@ -1258,8 +1326,12 @@ class SmartCleanupPage(QWidget):
                 # 更新数据模型
                 item.ai_risk = result.ai_risk
 
-                # 更新卡片样式
+                # 更新卡片样式和 AI 标签
                 card.update_risk_style()
+                # 更新 AI 结果
+                if hasattr(card, 'update_ai_tags'):
+                    card.ai_review_result = result
+                    card.update_ai_tags()
                 break
 
     def toggle_auto_managed(self, enabled: bool):
@@ -1681,7 +1753,9 @@ class SmartCleanupPage(QWidget):
             self._clear_items()
 
             for item in plan.items:
-                card = CleanupItemCard(item)
+                # 获取 AI 复核结果（如果有）
+                ai_result = self.ai_review_results.get(item.path) if hasattr(self, 'ai_review_results') else None
+                card = CleanupItemCard(item, ai_review_result=ai_result)
                 self.items_layout.insertWidget(self.items_layout.count() - 1, card)
                 self.item_cards.append((card, item))
 

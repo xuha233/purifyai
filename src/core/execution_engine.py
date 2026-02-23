@@ -273,9 +273,43 @@ class ExecutionThread(QThread):
         while retry_count <= max_retries:
             try:
                 if os.path.isfile(path):
+                    # 先尝试删除只读属性
+                    if os.name == 'nt':  # Windows
+                        try:
+                            import stat
+                            os.chmod(path, stat.S_IWRITE)
+                        except:
+                            pass
                     os.remove(path)
                 elif os.path.isdir(path):
-                    shutil.rmtree(path)
+                    # Windows 特殊处理：处理被锁定的文件
+                    if os.name == 'nt':
+                        self._clear_readonly(path)
+                        # 强制删除，忽略错误
+                        try:
+                            shutil.rmtree(path, ignore_errors=False)
+                        except OSError as e:
+                            # [WinError 145] 目录不是空的 - 可能包含被锁定的文件
+                            if hasattr(e, 'winerror') and e.winerror == 145:
+                                # 尝试删除子文件
+                                self._delete_directory_contents(path)
+                                # 再次尝试删除空目录
+                                try:
+                                    os.rmdir(path)
+                                except:
+                                    raise
+                            elif 'Directory not empty' in str(e):
+                                # 类似错误
+                                self._delete_directory_contents(path)
+                                try:
+                                    os.rmdir(path)
+                                except:
+                                    raise
+                            else:
+                                raise
+                    else:
+                        # Unix/Linux
+                        shutil.rmtree(path)
                 else:
                     return CleanupStatus.SKIPPED
 
@@ -310,6 +344,57 @@ class ExecutionThread(QThread):
                     raise Exception(error_msg)
 
         return CleanupStatus.FAILED
+
+    def _clear_readonly(self, path: str):
+        """清除目录中所有文件的只读属性（Windows）
+
+        Args:
+            path: 目录路径
+        """
+        import stat
+        if os.name != 'nt':
+            return
+
+        try:
+            for root, dirs, files in os.walk(path):
+                for name in files + dirs:
+                    full_path = os.path.join(root, name)
+                    try:
+                        os.chmod(full_path, stat.S_IWRITE)
+                    except:
+                        pass
+        except:
+            pass
+
+    def _delete_directory_contents(self, path: str):
+        """尝试删除目录中的内容（处理被锁定的文件）
+
+        Args:
+            path: 目录路径
+        """
+        import stat
+        if os.name != 'nt':
+            return
+
+        try:
+            for item_name in os.listdir(path):
+                item_path = os.path.join(path, item_name)
+                try:
+                    if os.path.isfile(item_path):
+                        try:
+                            os.chmod(item_path, stat.S_IWRITE)
+                        except:
+                            pass
+                        os.remove(item_path)
+                    elif os.path.isdir(item_path):
+                        self._clear_readonly(item_path)
+                        shutil.rmtree(item_path, ignore_errors=True)
+                except Exception as e:
+                    self.logger.debug(f"[EXECUTOR] 跳过被锁定的项目: {item_path}, 原因: {e}")
+                    pass
+        except Exception as e:
+            self.logger.debug(f"[EXECUTOR] 删除目录内容异常: {path}, 原因: {e}")
+            pass
 
     def _set_phase(self, phase: ExecutionPhase):
         """设置执行阶段
