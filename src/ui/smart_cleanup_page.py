@@ -1086,7 +1086,7 @@ class SmartCleanupPage(QWidget):
         msg_box.yesButton.setText("确认清理")
         msg_box.cancelButton.setText("取消")
 
-        if msg_box.exec() != MessageBox.Yes:
+        if msg_box.exec() != MessageBox.Accepted:
             return
 
         self.logger.info(f"[UI] AI 一键清理: {len(selected_items)} 项")
