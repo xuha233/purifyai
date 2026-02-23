@@ -600,11 +600,11 @@ class SmartCleanupPage(QWidget):
         title_row.addWidget(self.ai_status_indicator)
         title_row.addStretch()
 
-        # AI 切换开关
+        # AI 全自动托管开关
         self.ai_switch = SwitchButton()
         self.ai_switch.setChecked(self.config.enable_ai)
-        self.ai_switch.checkedChanged.connect(self.toggle_ai)
-        ai_switch_label = BodyLabel("AI 智能分析")
+        self.ai_switch.checkedChanged.connect(self.toggle_auto_managed)
+        ai_switch_label = BodyLabel("AI 全自动托管")
         ai_switch_label.setStyleSheet('font-size: 12px; color: #666; margin-right: 4px;')
         title_row.addWidget(ai_switch_label)
         title_row.addWidget(self.ai_switch)
@@ -1061,7 +1061,7 @@ class SmartCleanupPage(QWidget):
         msg_box.yesButton.setText("确认清理")
         msg_box.cancelButton.setText("取消")
 
-        if msg_box.exec() != MessageBox.Yes:
+        if msg_box.exec() != MessageBox.Accepted:
             return
 
         self.logger.info(f"[UI] 开始清理 {len(selected_items)} 个项目")
@@ -1190,23 +1190,66 @@ class SmartCleanupPage(QWidget):
             if self.current_plan:
                 self._load_items_from_plan(self.current_plan)
 
-            InfoBar.success(
-                '完成',
-                f'AI复核完成: {len(results)} 项已重新评估',
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=3000,
-                parent=self
-            )
-
             # 延迟隐藏进度条
             QTimer.singleShot(2000, lambda: self.ai_review_progress_bar.setVisible(False))
+
+            # 全自动托管模式：显示清理确认对话框
+            if self.config.enable_ai and self.current_plan:
+                self.logger.info("[UI] 全自动托管：显示清理确认对话框")
+                QTimer.singleShot(100, self._show_auto_managed_cleanup_dialog)
+
+            else:
+                # 手动模式：显示完成提示
+                InfoBar.success(
+                    '完成',
+                    f'AI复核完成: {len(results)} 项已重新评估',
+                    orient=Qt.Horizontal,
+                    isClosable=True,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self
+                )
         except Exception as e:
             self.logger.error(f"[UI] AI复核完成回调异常: {e}")
             self.ai_review_btn.setEnabled(True)
             self.ai_review_btn.setText("AI复核")
             self.ai_review_progress_bar.setVisible(False)
+
+    def _show_auto_managed_cleanup_dialog(self):
+        """显示全自动托管清理确认对话框"""
+        # AI 自动决策
+        auto_select_suspicious = self.config.auto_execute_suspicious
+        selected_items = self.cleaner.auto_select_items(auto_select_suspicious)
+
+        if not selected_items:
+            InfoBar.info("提示", "没有符合条件的项目可清理",
+                         parent=self, position=InfoBarPosition.TOP)
+            return
+
+        # 确认对话框
+        total_size = sum(item.size for item in selected_items)
+        safe_count = sum(1 for i in selected_items if i.is_safe)
+        suspicious_count = sum(1 for i in selected_items if i.is_suspicious)
+
+        message = (
+            f"AI 全自动托管模式将清理以下项目：\n"
+            f"• 安全项: {safe_count}\n"
+            f"• 疑似项: {suspicious_count}\n"
+            f"• 危险项: 已跳过\n\n"
+            f"预计释放空间: {self._format_size(total_size)}\n\n"
+            f"⚠️此操作不可撤销，是否继续？"
+        )
+
+        msg_box = MessageBox("AI 全自动托管清理确认", message, self)
+        msg_box.yesButton.setText("确认清理")
+        msg_box.cancelButton.setText("取消")
+
+        if msg_box.exec() != MessageBox.Accepted:
+            return
+
+        self.logger.info(f"[UI] AI全自动托管清理: {len(selected_items)} 项")
+        self.cleaner.execute_auto_cleanup()
+        self._set_ui_state('executing')
 
     def _update_item_card_ai_result(self, path: str, result: AIReviewResult):
         """更新项目卡片的AI复核结果显示"""
@@ -1218,6 +1261,32 @@ class SmartCleanupPage(QWidget):
                 # 更新卡片样式
                 card.update_risk_style()
                 break
+
+    def toggle_auto_managed(self, enabled: bool):
+        """切换AI全自动托管状态"""
+        self.config.enable_ai = enabled
+        self.ai_status_indicator.children()[0].setText("●")
+        self.ai_status_indicator.children()[0].setStyleSheet(
+            f'color: {"#28a745" if enabled else "#999"}; font-size: 10px;'
+        )
+        self.ai_status_indicator.children()[1].setText(f"托管 {'已启用' if enabled else '已禁用'}")
+
+        # 更新UI状态以反映托管模式
+        self._update_ui_for_auto_managed(enabled)
+
+        # 重置清理器以应用新配置
+        self.cleaner = get_smart_cleaner(
+            config=self.config,
+            backup_mgr=self.backup_mgr
+        )
+        self._connect_signals()
+        self.logger.info(f"[UI] AI托管已{'启用' if enabled else '禁用'}")
+
+    def _update_ui_for_auto_managed(self, auto_managed: bool):
+        """根据托管模式更新UI"""
+        # 在preview阶段，托管模式下隐藏AI一键清理按钮（因为会全自动）
+        if self.state == 'preview':
+            self.auto_clean_btn.setVisible(not auto_managed)
 
     def toggle_ai(self, enabled: bool):
         """切换 AI 状态"""
@@ -1430,6 +1499,12 @@ class SmartCleanupPage(QWidget):
         summary = f"Safe: {plan.safe_count} | Suspicious: {plan.suspicious_count} | Dangerous: {plan.dangerous_count}"
         self.status_label.setText(f"分析完成！{summary}")
 
+        # 全自动托管模式：自动启动AI复核
+        if self.config.enable_ai:
+            self.logger.info("[UI] 全自动托管模式：自动启动AI复核")
+            # 延迟一下再启动，让UI先刷新
+            QTimer.singleShot(500, self._on_ai_review_clicked)
+
     def _on_execution_completed(self, result):
         """执行完成回调"""
         # 重置清理器状态，允许新的扫描
@@ -1546,7 +1621,8 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setIcon(FluentIcon.DELETE)
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
-            self.auto_clean_btn.setVisible(True)  # 显示 AI 一键清理按钮
+            # 全自动托管模式下隐藏 AI 一键清理按钮（因为会全自动执行）
+            self.auto_clean_btn.setVisible(not self.config.enable_ai)
             self.auto_select_safe_btn.setEnabled(True)
             self.ai_review_btn.setEnabled(True)
             self.clear_selection_btn.setEnabled(True)
