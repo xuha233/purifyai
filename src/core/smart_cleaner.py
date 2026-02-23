@@ -30,7 +30,7 @@ from enum import Enum
 from typing import List, Dict, Optional, Callable
 from dataclasses import dataclass
 
-from PyQt5.QtCore import QObject, pyqtSignal, QThread, QMutex, QMutexLocker
+from PyQt5.QtCore import QObject, pyqtSignal, QThread, QMutex, QMutexLocker, Qt
 
 from .scanner import SystemScanner, BrowserScanner, AppDataScanner
 from .custom_scanner import CustomScanner
@@ -72,23 +72,24 @@ class ScannerAdapter(QThread):
                    '连接扫描器信号',
                    scanner_type=type(self.scanner).__name__)
 
+        # 使用 QueuedConnection 确保从 threading.Thread 发射的信号在 QThread 中被处理
         if hasattr(self.scanner, 'item_found'):
-            self.scanner.item_found.connect(self.item_found.emit)
+            self.scanner.item_found.connect(self.item_found.emit, Qt.QueuedConnection)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 item_found 信号')
 
         if hasattr(self.scanner, 'complete'):
-            self.scanner.complete.connect(self._on_complete)
+            self.scanner.complete.connect(self._on_complete, Qt.QueuedConnection)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 complete 信号')
 
         if hasattr(self.scanner, 'error'):
-            self.scanner.error.connect(self.error.emit)
+            self.scanner.error.connect(self.error.emit, Qt.QueuedConnection)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 error 信号')
 
         if hasattr(self.scanner, 'progress'):
-            self.scanner.progress.connect(self._translate_progress)
+            self.scanner.progress.connect(self._translate_progress, Qt.QueuedConnection)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 progress 信号')
 

@@ -197,28 +197,47 @@ class ScanInfoCard(SimpleCardWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(100)
+        self.setFixedHeight(90)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
+        # 水平布局：左边是内容，右边是spinner
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(16, 12, 16, 12)
+        main_layout.setSpacing(12)
+
+        # 左侧：内容区域
+        content_layout = QVBoxLayout()
+        content_layout.setSpacing(6)
+
+        # 标题和spinner容器
+        top_row = QHBoxLayout()
+        top_row.setSpacing(8)
 
         # 标题
         title = BodyLabel("扫描进度")
         title.setStyleSheet('font-size: 12px; color: #999;')
-        layout.addWidget(title)
+        top_row.addWidget(title)
+        top_row.addStretch()
+        content_layout.addLayout(top_row)
 
         # 当前扫描路径
         self.current_path_label = StrongBodyLabel("")
         self.current_path_label.setWordWrap(True)
-        self.current_path_label.setStyleSheet('font-size: 13px; color: #333;')
+        self.current_path_label.setStyleSheet('font-size: 14px; color: #333;')
         self.current_path_label.setText("等待开始...")
-        layout.addWidget(self.current_path_label)
+        content_layout.addWidget(self.current_path_label)
 
         # 扫描详情
         self.scan_detail_label = BodyLabel("")
         self.scan_detail_label.setStyleSheet('font-size: 11px; color: #666;')
         self.scan_detail_label.setText("")
-        layout.addWidget(self.scan_detail_label)
+        content_layout.addWidget(self.scan_detail_label)
+
+        main_layout.addLayout(content_layout, stretch=1)
+
+        # 右侧：Spinner
+        self.spinner = SpinnerWidget(size=36, color="#0078D4")
+        self.spinner.setVisible(False)
+        main_layout.addWidget(self.spinner)
 
     def set_current_path(self, path: str, detail: str = ""):
         """设置当前扫描路径"""
@@ -243,6 +262,14 @@ class ScanInfoCard(SimpleCardWidget):
         """清除信息"""
         self.current_path_label.setText("等待开始...")
         self.scan_detail_label.setText("")
+
+    def show_animating(self, animating: bool):
+        """显示/隐藏动画"""
+        self.spinner.setVisible(animating)
+        if animating:
+            self.spinner.start()
+        else:
+            self.spinner.stop()
 
 
 class CleanupItemCard(SimpleCardWidget):
@@ -653,24 +680,6 @@ class SmartCleanupPage(QWidget):
         self.scan_info_card = ScanInfoCard()
         self.scan_info_card.setVisible(False)
         main_layout.addWidget(self.scan_info_card)
-
-        # ===== 扫描动画指示器（旋转加载动画） =====
-        scan_ind_row = QWidget()
-        scan_ind_layout = QHBoxLayout(scan_ind_row)
-        scan_ind_layout.setContentsMargins(0, 0, 0, 0)
-
-        self.scan_indicator = SpinnerWidget(size=32, color="#0078D4")
-        self.scan_indicator.setVisible(False)
-        scan_ind_layout.addWidget(self.scan_indicator)
-
-        # 当前扫描路径显示
-        self.scan_current_path_label = BodyLabel("")
-        self.scan_current_path_label.setStyleSheet('color: #0078D4; font-size: 14px; font-weight: bold;')
-        self.scan_current_path_label.setVisible(False)
-        scan_ind_layout.addWidget(self.scan_current_path_label)
-        scan_ind_layout.addStretch()
-
-        header_layout.addWidget(scan_ind_row)
 
         main_layout.addLayout(header_layout)
 
@@ -1210,8 +1219,8 @@ class SmartCleanupPage(QWidget):
     def _on_scan_progress(self, current: int, total: int):
         """扫描进度回调"""
         # 启动扫描动画（仅当尚未启动时）
-        if hasattr(self, 'scan_indicator') and not self.scan_indicator.isVisible():
-            self.scan_indicator.start()
+        if hasattr(self, 'scan_info_card') and not self.scan_info_card.isVisible():
+            self.scan_info_card.show_animating(True)
 
         if total > 0:
             percent = int(current / total * 100)
@@ -1227,11 +1236,9 @@ class SmartCleanupPage(QWidget):
         import time
         self.last_activity_time = time.time()
 
-        # 停止扫描动画，启动分析动画
-        if hasattr(self, 'scan_indicator'):
-            self.scan_indicator.stop()
-            # 保持指示器可见但改为分析状态颜色
-            pass
+        # 确保扫描信息卡片可见并显示动画
+        if hasattr(self, 'scan_info_card'):
+            self.scan_info_card.show_animating(True)
 
         self.scan_info_card.set_analyzing(f"A正在分析 {current}/{total} 个项目...")
 
@@ -1334,15 +1341,12 @@ class SmartCleanupPage(QWidget):
 
         if state not in animating_states:
             # 停止动画和超时检测（只在非动画状态）
-            if hasattr(self, 'scan_indicator'):
-                self.scan_indicator.stop()
             if hasattr(self, 'scan_animation'):
                 self.scan_animation.stop()
             if hasattr(self, 'scan_path_timer'):
                 self.scan_path_timer.stop()
-            self.scan_indicator.setVisible(False)
             self.scan_info_card.setVisible(False)
-            self.scan_current_path_label.setVisible(False)
+            self.scan_info_card.show_animating(False)
             self._stop_timeout_timer()
 
         if state == 'idle':
@@ -1363,13 +1367,8 @@ class SmartCleanupPage(QWidget):
             self.status_label.setText("扫描中...")
 
             # 显示扫描动画组件
-            if hasattr(self, 'scan_indicator'):
-                self.scan_indicator.setVisible(True)
-                self.scan_indicator.start()
-            if hasattr(self, 'scan_info_card'):
-                self.scan_info_card.setVisible(True)
-            if hasattr(self, 'scan_current_path_label'):
-                self.scan_current_path_label.setVisible(True)
+            self.scan_info_card.setVisible(True)
+            self.scan_info_card.show_animating(True)
 
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
@@ -1381,13 +1380,10 @@ class SmartCleanupPage(QWidget):
             self.status_label.setText("正在分析...")
 
             # 保持扫描动画组件可见
-            if hasattr(self, 'scan_indicator'):
-                self.scan_indicator.setVisible(True)
-                self.scan_indicator.start()
-            if hasattr(self, 'scan_info_card'):
-                self.scan_info_card.setVisible(True)
-                # 更新为分析状态
-                self.scan_info_card.set_analyzing("AI 正在分析扫描结果...")
+            self.scan_info_card.setVisible(True)
+            self.scan_info_card.show_animating(True)
+            # 更新为分析状态
+            self.scan_info_card.set_analyzing("AI 正在分析扫描结果...")
 
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
