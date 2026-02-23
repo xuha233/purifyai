@@ -74,3 +74,17 @@ Traceback (most recent call last):
                     ^^^^^^^^^^^
 NameError: name 'QMessageBox' is not defined
 
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 1240, in _on_plan_ready
+    self._load_items_from_plan(plan)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 1374, in _load_items_from_plan
+    card = CleanupItemCard(item)
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 288, in __init__
+    self.update_risk_style()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\smart_cleanup_page.py", line 384, in update_risk_style
+    RiskLevel.UNKNOWN: ThemeColors.RISK_UNKNOWN
+    ^^^^^^^^^^^^^^^^^
+AttributeError: type object 'RiskLevel' has no attribute 'UNKNOWN'
+

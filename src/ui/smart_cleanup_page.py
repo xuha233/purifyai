@@ -380,17 +380,16 @@ class CleanupItemCard(SimpleCardWidget):
         risk_colors = {
             RiskLevel.SAFE: ThemeColors.RISK_SAFE,
             RiskLevel.SUSPICIOUS: ThemeColors.RISK_WARY,
-            RiskLevel.DANGEROUS: ThemeColors.RISK_DANGEROUS,
-            RiskLevel.UNKNOWN: ThemeColors.RISK_UNKNOWN
+            RiskLevel.DANGEROUS: ThemeColors.RISK_DANGEROUS
         }
         risk_labels = {
             RiskLevel.SAFE: '安全',
             RiskLevel.SUSPICIOUS: '可疑',
-            RiskLevel.DANGEROUS: '危险',
-            RiskLevel.UNKNOWN: '未知'
+            RiskLevel.DANGEROUS: '危险'
         }
 
-        bg_color, fg_color = risk_colors.get(self.item.ai_risk, ThemeColors.RISK_UNKNOWN)
+        # 获取风险对应的颜色，如果未知则使用wary
+        bg_color, fg_color = risk_colors.get(self.item.ai_risk, ThemeColors.RISK_WARY)
         risk_text = risk_labels.get(self.item.ai_risk, '未知')
 
         self.risk_label.setText(risk_text)
