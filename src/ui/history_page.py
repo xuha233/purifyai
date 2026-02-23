@@ -1,24 +1,27 @@
 """
 清理历史页面
 显示清理历史记录，支持筛选、导出和查看详情
+
+Feature 1 & 5: Report History Loading - 集成数据库报告查看
 """
 import csv
 import json
 import os
 import sys
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox,
-    QComboBox, QPushButton, QLabel
+    QComboBox, QPushButton, QLabel, QAbstractItemView
 )
-from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtCore import Qt, QDate, pyqtSignal
 
 from qfluentwidgets import (
     StrongBodyLabel, BodyLabel, SimpleCardWidget, PushButton,
-    PrimaryPushButton, ComboBox
+    PrimaryPushButton, ComboBox, InfoBar, InfoBarPosition,
+    SegmentedWidget, FluentIcon
 )
 
 # 导入时间工具
@@ -29,7 +32,14 @@ from core.database import get_database
 
 
 class HistoryPage(QWidget):
-    """清理历史页面"""
+    """清理历史页面
+
+    Feature 1 & 5: Report History Loading - 支持查看详细的清理报告
+    """
+
+    # 信号
+    view_report = pyqtSignal(int)  # report_id - 查看详细报告
+    view_plan_report = pyqtSignal(str)  # plan_id - 通过计划ID查看报告
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -99,6 +109,26 @@ class HistoryPage(QWidget):
 
         layout.addSpacing(15)
 
+        # 趋势图卡片 (Feature 3: Enhanced Report Features)
+        try:
+            from ui.report_trends_chart import ReportTrendsCard
+
+            trends_layout = QHBoxLayout()
+            trends_layout.setSpacing(15)
+
+            # 查看趋势按钮
+            self.view_trends_btn = PushButton(FluentIcon.CALENDAR, "查看清理趋势")
+            self.view_trends_btn.clicked.connect(self._show_trends_dialog)
+            trends_layout.addStretch()
+            trends_layout.addWidget(self.view_trends_btn)
+
+            layout.addLayout(trends_layout)
+        except ImportError:
+            # 趋势图组件不可用时静默跳过
+            pass
+
+        layout.addSpacing(15)
+
         # 筛选区域
         filter_layout = QHBoxLayout()
         filter_layout.addWidget(BodyLabel('筛选:'))
@@ -143,13 +173,31 @@ class HistoryPage(QWidget):
         layout.addWidget(self.table)
 
     def load_history(self):
-        """加载历史记录"""
+        """加载历史记录 (Feature 5: Report History Loading)
+
+        优先加载 cleanup_reports 表中的详细报告"""
         import logging
         logger = logging.getLogger(__name__)
-        self.history_data = self.db.get_clean_history(limit=200)
-        logger.debug(f"[历史页] 加载的记录数: {len(self.history_data)}")
-        if self.history_data and len(self.history_data) > 0:
-            logger.debug(f"[历史页] 第一条记录: {self.history_data[0]}")
+
+        # 首先尝试加载 cleanup_reports
+        try:
+            self.reports_data = self.db.get_cleanup_reports(limit=200)
+            logger.debug(f"[历史页] 加载的报告数: {len(self.reports_data)}")
+
+            if self.reports_data:
+                logger.debug(f"[历史页] 第一条报告: {self.reports_data[0]}")
+                self.use_reports_mode = True
+            else:
+                # 回退到 clean_history
+                self.history_data = self.db.get_clean_history(limit=200)
+                logger.debug(f"[历史页] 回退到 clean_history: {len(self.history_data)} 条")
+                self.use_reports_mode = False
+        except Exception as e:
+            logger.error(f"[历史页] 加载报告异常: {e}")
+            # 回退到 clean_history
+            self.history_data = self.db.get_clean_history(limit=200)
+            self.use_reports_mode = False
+
         self.apply_filter()
         self.update_stats()
 
@@ -201,14 +249,44 @@ class HistoryPage(QWidget):
             self.table.insertRow(row)
 
             # 时间
-            timestamp = parse_iso_timestamp(item['timestamp_cleaned_at'])
-            time_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            if 'generated_at' in item:
+                # Reports data
+                timestamp = parse_iso_timestamp(item['generated_at'])
+                time_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                # 类型
+                scan_type = item.get('scan_type', 'unknown')
+                type_name = self._get_type_name(scan_type)
+                # 清理数量
+                summary = item.get('report_summary', {})
+                count = summary.get('total_items', 0)
+                # 释放空间
+                size_bytes = item.get('total_freed_size', 0)
+                size_str = self._format_size(size_bytes)
+                # 操作 - 查看详细报告
+                action_btn = QPushButton('查看报告')
+                action_btn.clicked.connect(
+                    lambda checked, report_id=item.get('report_id'), plan_id=item.get('plan_id'):
+                    self._view_detailed_report(report_id, plan_id)
+                )
+            else:
+                # Legacy clean_history data
+                timestamp = parse_iso_timestamp(item['timestamp_cleaned_at'])
+                time_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                # 类型
+                type_name = self._get_type_name(item['clean_type'])
+                # 清理数量
+                count = item['items_count']
+                # 释放空间
+                size_str = self._format_size(item['total_size'])
+                # 操作
+                action_btn = QPushButton('查看')
+                action_btn.clicked.connect(lambda checked, item=item: self.show_details(item))
+
+            # 设置表格项
             self.table.setItem(row, 0, QTableWidgetItem(time_str))
 
             # 类型
-            type_name = self._get_type_name(item['clean_type'])
             type_item = QTableWidgetItem(type_name)
-            # 根据类型设置不同颜色
             if '系统' in type_name:
                 type_item.setForeground(Qt.darkBlue)
             elif '浏览器' in type_name:
@@ -218,19 +296,36 @@ class HistoryPage(QWidget):
             self.table.setItem(row, 1, type_item)
 
             # 清理数量
-            count_item = QTableWidgetItem(str(item['items_count']))
+            count_item = QTableWidgetItem(str(count))
             count_item.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(row, 2, count_item)
 
             # 释放空间
-            size_str = self._format_size(item['total_size'])
             size_item = QTableWidgetItem(size_str)
             self.table.setItem(row, 3, size_item)
 
             # 操作
-            action_btn = QPushButton('查看')
-            action_btn.clicked.connect(lambda checked, item=item: self.show_details(item))
             self.table.setCellWidget(row, 4, action_btn)
+
+    def _view_detailed_report(self, report_id: Optional[int], plan_id: Optional[str]):
+        """查看详细清理报告 (Feature 5: Report History Loading)
+
+        Args:
+            report_id: 报告ID
+            plan_id: 计划ID
+        """
+        if report_id:
+            self.view_report.emit(report_id)
+        elif plan_id:
+            self.view_plan_report.emit(plan_id)
+        else:
+            InfoBar.warning(
+                "提示",
+                "无法查看此报告的信息",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=2000
+            )
 
     def _get_type_name(self, clean_type: str) -> str:
         """获取类型名称"""
@@ -261,22 +356,34 @@ class HistoryPage(QWidget):
 
     def update_stats(self):
         """更新统计信息"""
-        if not self.history_data:
+        # 使用当前可用的数据（reports_data 或 history_data）
+        reports_data = getattr(self, 'reports_data', [])
+        data = reports_data if reports_data else getattr(self, 'history_data', [])
+
+        if not data:
             self.total_count_label.setText('已清理: 0 次')
             self.total_size_label.setText('总释放: 0 B')
             self.avg_size_label.setText('日均: 0 B')
             return
 
-        total_count = len(self.history_data)
-        total_size = sum(item['total_size'] for item in self.history_data)
+        total_count = len(data)
+
+        # 计算总释放空间
+        if 'total_freed_size' in data[0]:
+            # Reports data
+            total_size = sum(item['total_freed_size'] for item in data)
+        else:
+            # History data
+            total_size = sum(item['total_size'] for item in data)
 
         self.total_count_label.setText(f'已清理: {total_count} 次')
         self.total_size_label.setText(f'总释放: {self._format_size(total_size)}')
 
         # 计算日均
         if total_count > 1:
-            first_time = parse_iso_timestamp(self.history_data[-1]['timestamp_cleaned_at'])
-            last_time = parse_iso_timestamp(self.history_data[0]['timestamp_cleaned_at'])
+            time_key = 'generated_at' if 'generated_at' in data[0] else 'timestamp_cleaned_at'
+            first_time = parse_iso_timestamp(data[-1][time_key])
+            last_time = parse_iso_timestamp(data[0][time_key])
             days = (last_time - first_time).days
             if days > 0:
                 avg_size = total_size / days
@@ -439,3 +546,60 @@ class HistoryPage(QWidget):
             finally:
                 if conn:
                     conn.close()
+
+    def _show_trends_dialog(self):
+        """显示趋势对话框 (Feature 3: Enhanced Report Features)"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            from ui.report_trends_chart import ReportTrendsCard
+
+            # 获取报告数据
+            reports_data = getattr(self, 'reports_data', [])
+            if not reports_data:
+                InfoBar.warning(
+                    "提示",
+                    "暂无报告数据",
+                    parent=self,
+                    position=InfoBarPosition.TOP,
+                    duration=2000
+                )
+                return
+
+            # 创建趋势图对话框
+            from PyQt5.QtWidgets import QDialog, QVBoxLayout
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle("清理趋势")
+            dialog.setMinimumSize(800, 600)
+
+            layout = QVBoxLayout(dialog)
+            layout.setContentsMargins(20, 20, 20, 20)
+
+            # 添加趋势卡片
+            trends_card = ReportTrendsCard()
+            trends_card.update_trends(reports_data)
+            layout.addWidget(trends_card)
+
+            dialog.exec()
+
+            logger.info("[历史页] 趋势图已显示")
+
+        except ImportError:
+            InfoBar.warning(
+                "提示",
+                "趋势图组件不可用",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=2000
+            )
+        except Exception as e:
+            logger.error(f"[历史页] 显示趋势图失败: {e}")
+            InfoBar.error(
+                "错误",
+                f"显示趋势图失败: {str(e)}",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=3000
+            )

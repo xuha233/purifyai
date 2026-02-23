@@ -31,6 +31,9 @@ from qfluentwidgets import (
     Flyout, FlyoutAnimationType
 )
 
+# Pre-check widget import (Feature 4: Pre-Check UI Integration)
+# Import is done in methods to avoid circular dependency
+
 from core.smart_cleaner import (
     SmartCleaner, SmartCleanConfig, SmartCleanPhase, ScanType,
     get_smart_cleaner, CleanupPlan, CleanupItem, CleanupStatus
@@ -1049,6 +1052,10 @@ class SmartCleanupPage(QWidget):
 
     def _on_scan_start(self):
         """开始扫描"""
+        # 首先运行预检查（Feature 4: Pre-Check UI Integration）
+        if not self._run_precheck():
+            return
+
         scan_type_map = ["system", "browser", "appdata", "custom"]
         scan_type = scan_type_map[self.scan_type_combo.currentIndex()]
         scan_target = ""
@@ -1085,6 +1092,83 @@ class SmartCleanupPage(QWidget):
         # 启动扫描
         self.cleaner.start_scan(scan_type, scan_target)
         self.current_plan = None
+
+    def _run_precheck(self) -> bool:
+        """运行预检查 (Feature 4: Pre-Check UI Integration)
+
+        Returns:
+            是否通过检查可以继续扫描
+        """
+        # 获取扫描路径
+        scan_paths = self._get_scan_paths()
+        if not scan_paths:
+            # 系统扫描路径，使用默认值
+            scan_paths = ["C:\\", "C:\\Users"]
+
+        from ui.scan_precheck_widget import get_pre_check_widget
+        from core.models_smart import CheckResult
+
+        # 创建预检查组件
+        precheck_widget = get_pre_check_widget()
+
+        # 运行检查
+        result = precheck_widget.run_precheck(scan_paths, required_space_mb=100)
+
+        if not result.can_scan:
+            # 显示预检查结果对话框
+            from PyQt5.QtWidgets import QDialog, QVBoxLayout
+            dialog = QDialog(self)
+            dialog.setWindowTitle("扫描预检查")
+            dialog.setMinimumSize(500, 400)
+
+            layout = QVBoxLayout(dialog)
+            layout.addWidget(precheck_widget)
+
+            from qfluentwidgets import PushButton
+            close_btn = PushButton("关闭")
+            close_btn.clicked.connect(dialog.accept)
+            layout.addWidget(close_btn)
+
+            dialog.exec()
+
+            return False
+
+        # 检查通过，显示简要信息
+        if result.warnings:
+            InfoBar.warning(
+                title="预检查完成",
+                content=f"检查通过，但发现 {len(result.warnings)} 个警告",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=2000
+            )
+
+        return True
+
+    def _get_scan_paths(self) -> List[str]:
+        """获取扫描路径
+
+        Returns:
+            扫描路径列表
+        """
+        scan_type = self.scan_type_combo.currentText()
+        if scan_type == "系统文件":
+            return ["C:\\Windows", "C:\\Users", "C:\\ProgramData"]
+        elif scan_type == "浏览器缓存":
+            return ["C:\\Users"]
+        elif scan_type == "AppData 目录":
+            return ["C:\\Users"]
+        elif scan_type == "自定义路径":
+            # 使用文件对话框选择路径
+            from PyQt5.QtWidgets import QFileDialog
+            path = QFileDialog.getExistingDirectory(
+                self, "选择扫描目录"
+            )
+            if path:
+                return [path]
+            return []
+
+        return []
 
     def _update_scan_path(self):
         """实时更新扫描路径显示"""

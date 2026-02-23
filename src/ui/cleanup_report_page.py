@@ -237,6 +237,7 @@ class CleanupReportPage(QWidget):
     return_to_scan = pyqtSignal()
     retry_failed = pyqtSignal(list)
     navigate_to_recovery = pyqtSignal()
+    view_trends = pyqtSignal()  # 查看趋势图
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -248,7 +249,15 @@ class CleanupReportPage(QWidget):
         self.recovery_manager = get_recovery_manager()
         self.backup_manager = get_backup_manager()
 
+        # 获取 smart_cleaner 实例用于重试 (Feature 2: Retry Failed Items)
+        self.cleaner = None
+
+        # 报告历史数据 (用于趋势图和对比)
+        self.report_history: List[Dict] = []
+
         self.logger = logger
+        self._load_report_history()
+
         self.init_ui()
 
     def init_ui(self):
@@ -446,6 +455,16 @@ class CleanupReportPage(QWidget):
 
         action_layout.addStretch()
 
+        # 查看趋势按钮 (Feature 3: Enhanced Report Features)
+        self.view_trends_btn = PushButton(FluentIcon.PIE_SINGLE, "查看趋势")
+        self.view_trends_btn.clicked.connect(self._on_view_trends)
+        action_layout.addWidget(self.view_trends_btn)
+
+        # 对比报告按钮 (Feature 3: Enhanced Report Features)
+        self.compare_btn = PushButton(FluentIcon.SYNC, "对比报告")
+        self.compare_btn.clicked.connect(self._on_compare_reports)
+        action_layout.addWidget(self.compare_btn)
+
         # 导出 JSON 按钮
         self.export_json_btn = PushButton(FluentIcon.CODE, "导出 JSON")
         self.export_json_btn.clicked.connect(lambda: self._export_as("json"))
@@ -469,6 +488,14 @@ class CleanupReportPage(QWidget):
 
         # 初始状态
         self._set_empty_state()
+
+    def set_cleaner(self, cleaner):
+        """设置 SmartCleaner 实例（用于重试功能）
+
+        Args:
+            cleaner: SmartCleaner 实例
+        """
+        self.cleaner = cleaner
 
     def show_report(
         self,
@@ -568,7 +595,126 @@ class CleanupReportPage(QWidget):
         ]
 
         self.logger.info(f"[REPORT] 重试失败项: {len(failed_item_ids)} 项")
-        self.retry_failed.emit(failed_item_ids)
+
+        # 如果有 smart_cleaner 实例，直接重试
+        if self.cleaner:
+            try:
+                # 检查是否处于可以重试的状态
+                from core.smart_cleaner import SmartCleanPhase
+                if self.cleaner.get_current_phase() != SmartCleanPhase.IDLE:
+                    InfoBar.warning(
+                        "提示",
+                        "请等待当前操作完成后再重试",
+                        parent=self,
+                        position=InfoBarPosition.TOP,
+                        duration=2000
+                    )
+                    return
+
+                # 执行重试
+                success = self.cleaner.retry_failed_items(failed_item_ids)
+                if success:
+                    InfoBar.success(
+                        "重试启动",
+                        f"正在重试 {len(failed_item_ids)} 个失败项...",
+                        parent=self,
+                        position=InfoBarPosition.TOP,
+                        duration=3000
+                    )
+                    self.retry_btn.setEnabled(False)
+                    self.retry_btn.setText("重试中...")
+                else:
+                    InfoBar.warning(
+                        "提示",
+                        "没有有效的失败项可重试",
+                        parent=self,
+                        position=InfoBarPosition.TOP,
+                        duration=2000
+                    )
+            except Exception as e:
+                self.logger.error(f"[REPORT] 重试失败: {e}")
+                InfoBar.error(
+                    "重试失败",
+                    f"重试失败: {str(e)}",
+                    parent=self,
+                    position=InfoBarPosition.TOP,
+                    duration=3000
+                )
+        else:
+            # 发出信号让父组件处理
+            self.retry_failed.emit(failed_item_ids)
+
+    def load_report_by_id(self, report_id: int):
+        """从数据库加载历史报告 (Feature 1: Report History Loading)
+
+        Args:
+            report_id: 报告ID
+        """
+        from core.database import get_database
+
+        db = get_database()
+        report_data = db.get_cleanup_report(report_id=report_id)
+
+        if not report_data:
+            InfoBar.warning(
+                "提示",
+                "报告不存在或已被删除",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=2000
+            )
+            return
+
+        # 重构报告对象（简化版本，因为原始 ExecutionResult 无法从 JSON 恢复）
+        class SimpleReport:
+            def __init__(self, data):
+                self.plan_id = data.get('plan_id', '')
+                self.summary = data.get('report_summary', {})
+                self.statistics = data.get('report_statistics', {})
+                self.failures = data.get('report_failures', [])
+                self.recovery_records = []
+                self.generated_at = data.get('generated_at', '')
+
+        self.current_report = SimpleReport(report_data)
+        self._update_ui_with_report()
+
+        self.logger.info(f"[REPORT] 已加载历史报告: report_id={report_id}")
+
+    def load_report_by_plan_id(self, plan_id: str):
+        """从数据库加载历史报告（通过计划ID）
+
+        Args:
+            plan_id: 计划ID
+        """
+        from core.database import get_database
+
+        db = get_database()
+        report_data = db.get_cleanup_report(plan_id=plan_id)
+
+        if not report_data:
+            InfoBar.warning(
+                "提示",
+                f"计划 {plan_id} 的报告不存在",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=2000
+            )
+            return
+
+        # 重构报告对象
+        class SimpleReport:
+            def __init__(self, data):
+                self.plan_id = data.get('plan_id', '')
+                self.summary = data.get('report_summary', {})
+                self.statistics = data.get('report_statistics', {})
+                self.failures = data.get('report_failures', [])
+                self.recovery_records = []
+                self.generated_at = data.get('generated_at', '')
+
+        self.current_report = SimpleReport(report_data)
+        self._update_ui_with_report()
+
+        self.logger.info(f"[REPORT] 已加载历史报告: plan_id={plan_id}")
 
     def _on_export_report(self):
         """导出报告（快捷菜单）"""
@@ -648,3 +794,87 @@ class CleanupReportPage(QWidget):
                 self.failures_card.pos().x(),
                 self.failures_card.pos().y()
             )
+
+    # ========== Feature 3: Enhanced Report Features ==========
+
+    def _load_report_history(self):
+        """加载报告历史数据
+
+        用于趋势图和对比功能
+        """
+        from core.database import get_database
+
+        try:
+            db = get_database()
+            self.report_history = db.get_cleanup_reports(limit=50)
+            # self.logger.info(f"[REPORT] 加载报告历史: {len(self.report_history)} 条")
+        except Exception as e:
+            # self.logger.error(f"[REPORT] 加载报告历史失败: {e}")
+            self.report_history = []
+
+    def _on_view_trends(self):
+        """查看趋势图 (Feature 3: Enhanced Report Features)"""
+        from ui.report_trends_chart import ReportTrendsCard
+
+        if not self.report_history:
+            InfoBar.warning(
+                "提示",
+                "暂无历史报告数据",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=2000
+            )
+            return
+
+        # 创建趋势图对话框
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("清理趋势")
+        dialog.setMinimumSize(800, 600)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        # 添加趋势卡片
+        trends_card = ReportTrendsCard()
+        trends_card.update_trends(self.report_history)
+        layout.addWidget(trends_card)
+
+        dialog.exec()
+
+        self.logger.info("[REPORT] 趋势图已显示")
+
+    def _on_compare_reports(self):
+        """对比报告 (Feature 3: Enhanced Report Features)"""
+        if len(self.report_history) < 2:
+            InfoBar.warning(
+                "提示",
+                "需要至少2个历史报告才能进行对比",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=2000
+            )
+            return
+
+        from ui.report_compare_dialog import show_report_compare_dialog
+
+        # 更新历史数据（包含当前报告）
+        reports = self.report_history.copy()
+
+        # 如果有当前报告，添加到开头
+        if self.current_report and hasattr(self.current_report, 'plan_id'):
+            current_report_data = {
+                'plan_id': self.current_report.plan_id,
+                'report_summary': self.current_report.summary,
+                'report_statistics': self.current_report.statistics,
+                'report_failures': self.current_report.failures,
+                'generated_at': self.current_report.generated_at.isoformat(),
+            }
+            reports.insert(0, current_report_data)
+
+        # 显示对比对话框
+        result = show_report_compare_dialog(reports, parent=self)
+
+        if result:
+            self.logger.info(f"[REPORT] 报告对比完成: {result}")

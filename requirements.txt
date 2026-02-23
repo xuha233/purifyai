@@ -13,3 +13,6 @@ psutil>=5.9.0
 
 # Optional: for file cleaning operations
 send2trash>=1.8.0
+
+# Charts for report visualization
+matplotlib>=3.5.0

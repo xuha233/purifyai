@@ -251,6 +251,14 @@ class ScanType(Enum):
     DISK = "disk"                       # 深度磁盘扫描
 
 
+# 智能体模式枚举
+class AgentMode(Enum):
+    """智能体运行模式"""
+    DISABLED = "disabled"       # 禁用，使用传统系统
+    HYBRID = "hybrid"          # 混合模式：智能体+规则
+    FULL = "full"              # 完全智能体模式
+
+
 @dataclass
 class SmartCleanConfig:
     """智能清理配置"""
@@ -276,6 +284,10 @@ class SmartCleanConfig:
     auto_execute_suspicious: bool = True   # 自动执行 Suspicious 项
     auto_skip_dangerous: bool = True       # 自动跳过 Dangerous 项
     confirm_before_auto_clean: bool = True  # 自动清理前确认
+
+    # 智能体系统配置（新增）
+    agent_mode: str = "hybrid"             # 智能体模式: disabled/hybrid/full
+    enable_agent_review: bool = True       # 启用智能体审查
 
     def __post_init__(self):
         if self.exclude_patterns is None:
@@ -551,6 +563,11 @@ class SmartCleaner(QObject):
         self.ai_review_orchestrator: Optional[AIReviewOrchestrator] = None
         self.ai_review_results: Dict[str, AIReviewResult] = {}  # path -> AIReviewResult
 
+        # 智能体系统组件（新增）
+        self.agent_mode = AgentMode(self.config.agent_mode)
+        self.agent_scanner: Optional['AgentScanner'] = None  # type: ignore
+        self.agent_executor: Optional['AgentExecutor'] = None  # type: ignore
+
         # 状态管理
         self.current_phase = SmartCleanPhase.IDLE
         self.scan_thread: Optional[ScanThread] = None
@@ -563,6 +580,9 @@ class SmartCleaner(QObject):
         # 连接执行器的信号
         self._connect_executor_signals()
 
+        # 检查智能体系统可用性
+        self._check_agent_availability()
+
     def _connect_executor_signals(self):
         """连接执行器的信号"""
         self.executor.execution_completed.connect(self._on_executor_completed)
@@ -572,6 +592,32 @@ class SmartCleaner(QObject):
     def _on_executor_completed(self, result):
         """执行完成回调 - 转发信号到 UI"""
         self.logger.info(f"[SMART_CLEAN] 执行完成: plan_id={result.plan_id}, status={result.status.value}")
+
+        # 保存报告到数据库 (Feature 1: Report Persistence)
+        try:
+            from .cleanup_report_generator import CleanupReportGenerator
+            report_gen = CleanupReportGenerator()
+            report = report_gen.generate_report(self.current_plan, result)
+
+            # 将报告转换为字典格式
+            report_data = {
+                'summary': report.summary,
+                'statistics': report.statistics,
+                'failures': report.failures,
+                'recovery_records': report.recovery_records
+            }
+
+            # 保存到数据库
+            self.logger.info(f"[SMART_CLEAN] 保存报告: plan_id={self.current_plan.plan_id}")
+            report_id = self.db.save_cleanup_report(self.current_plan.plan_id, report_data)
+            if report_id:
+                self.logger.info(f"[SMART_CLEAN] 报告已保存: report_id={report_id}")
+            else:
+                self.logger.warning(f"[SMART_CLEAN] 报告保存失败")
+
+        except Exception as e:
+            self.logger.error(f"[SMART_CLEAN] 保存报告异常: {e}")
+
         self._set_phase(SmartCleanPhase.COMPLETED)
         # 转发执行完成信号
         self.execution_completed.emit(result)
@@ -990,6 +1036,345 @@ class SmartCleaner(QObject):
         """AI 复核批次完成回调"""
         self.logger.info(f"[SMART_CLEAN] AI 复核完成: {len(results)} 项")
         self.ai_review_completed.emit(results)
+
+    # ==========================================================================
+    # 失败项重试功能 (Feature 2: Retry Failed Items)
+    # ==========================================================================
+
+    def get_failed_items(self, plan_id: str) -> List[CleanupItem]:
+        """获取失败的清理项
+
+        Args:
+            plan_id: 计划ID
+
+        Returns:
+            失败项列表
+        """
+        from .cleanup_report_generator import CleanupReportGenerator
+
+        # 从数据库获取报告
+        report_data = self.db.get_cleanup_report(plan_id=plan_id)
+        if not report_data:
+            self.logger.warning(f"[SMART_CLEAN] 未找到计划 {plan_id} 的报告")
+            return []
+
+        # 获取失败项信息
+        failures = report_data.get('report_failures', [])
+        if not failures:
+            return []
+
+        # 获取完整的项目信息
+        items_to_retry = []
+        for fail in failures:
+            item_id = fail.get('item_id')
+            if item_id:
+                item_data = self.db.get_cleanup_item(item_id)
+                if item_data:
+                    # 使用 from_dict 静态方法创建 CleanupItem 对象
+                    item = CleanupItem.from_dict(item_data, item_id)
+                    items_to_retry.append(item)
+
+        self.logger.info(f"[SMART_CLEAN] 获取到 {len(items_to_retry)} 个失败项用于重试")
+        return items_to_retry
+
+    def retry_failed_items(self, item_ids: List[int]) -> bool:
+        """重试失败的清理项
+
+        Args:
+            item_ids: 要重试的项目ID列表
+
+        Returns:
+            是否成功启动
+        """
+        # 获取完整的项目信息
+        items_to_retry = []
+        for item_id in item_ids:
+            item_data = self.db.get_cleanup_item(item_id)
+            if item_data:
+                # 检查文件是否还存在
+                import os
+                if os.path.exists(item_data['path']):
+                    # 使用 from_dict 静态方法创建 CleanupItem 对象
+                    item = CleanupItem.from_dict(item_data, item_id)
+                    items_to_retry.append(item)
+
+        if not items_to_retry:
+            self.logger.warning("[SMART_CLEAN] 没有有效的失败项可重试")
+            return False
+
+        self.logger.info(f"[SMART_CLEAN] 开始重试 {len(items_to_retry)} 个失败项")
+
+        # 创建重试计划
+        retry_plan = CleanupPlan(
+            plan_id=f"retry_{int(time.time())}",
+            scan_type="retry",
+            scan_target="failed_items",
+            items=items_to_retry,
+            total_size=sum(item.size for item in items_to_retry),
+            estimated_freed=sum(item.size for item in items_to_retry if item.is_safe)
+        )
+
+        # 执行重试
+        execution_plan = CleanupPlan(
+            plan_id=f"exec_retry_{int(time.time())}",
+            scan_type="retry",
+            scan_target="failed_items",
+            items=items_to_retry,
+            total_size=sum(item.size for item in items_to_retry),
+            estimated_freed=sum(item.size for item in items_to_retry if item.is_safe)
+        )
+
+        # 准备执行配置
+        from .execution_engine import ExecutionConfig
+        execution_config = ExecutionConfig(
+            max_retries=3,
+            enable_backup=True
+        )
+
+        # 启动执行
+        success = self.executor.execute_plan(execution_plan, execution_config)
+        if not success:
+            self._set_phase(SmartCleanPhase.ERROR)
+            return False
+
+        self._set_phase(SmartCleanPhase.EXECUTING)
+        return True
+
+    # ==========================================================================
+    # 智能体系统集成 (Agent System Integration)
+    # ==========================================================================
+
+    def _check_agent_availability(self):
+        """检查智能体系统可用性"""
+        if self.agent_mode == AgentMode.DISABLED:
+            self.logger.info("[SMART_CLEAN] 智能体系统: 禁用模式")
+            return
+
+        try:
+            # 尝试导入智能体模块
+            from ..agent import get_orchestrator
+            self.logger.info(f"[SMART_CLEAN] 智能体系统: {self.agent_mode.value} 模式可用")
+        except ImportError as e:
+            self.logger.warning(f"[SMART_CLEAN] 智能体系统不可用: {e}")
+            self.agent_mode = AgentMode.DISABLED
+
+    def set_agent_mode(self, mode: AgentMode):
+        """设置智能体模式
+
+        Args:
+            mode: 智能体模式
+        """
+        self.agent_mode = mode
+        self.config.agent_mode = mode.value
+        self.logger.info(f"[SMART_CLEAN] 智能体模式设置为: {mode.value}")
+        self._check_agent_availability()
+
+    def start_scan_with_agent(
+        self,
+        scan_type: str,
+        scan_target: str = ""
+    ) -> bool:
+        """使用智能体系统进行扫描
+
+        Args:
+            scan_type: 扫描类型
+            scan_target: 扫描目标
+
+        Returns:
+            是否成功启动
+        """
+        if self.agent_mode == AgentMode.DISABLED:
+            self.logger.warning("[SMART_CLEAN] 智能体系统已禁用，使用传统扫描")
+            return self.start_scan(scan_type, scan_target)
+
+        if not self._is_idle():
+            self.logger.warning("[SMART_CLEAN] 正在运行中，无法启动新的扫描")
+            return False
+
+        try:
+            from .agent_adapter import get_agent_scanner
+
+            self._set_phase(SmartCleanPhase.SCANNING)
+            self.logger.info(f"[SMART_CLEAN] 启动智能体扫描: {scan_type}")
+
+            self.agent_scanner = get_agent_scanner(
+                scan_type=scan_type,
+                scan_target=scan_target,
+                mode=self.agent_mode
+            )
+
+            # 连接信号
+            self.agent_scanner.progress.connect(self._on_scan_progress)
+            self.agent_scanner.item_found.connect(self.item_found.emit)
+            self.agent_scanner.complete.connect(self._on_agent_scan_completed)
+            self.agent_scanner.error.connect(self.error.emit)
+
+            # 启动线程
+            self.agent_scanner.start()
+            return True
+
+        except Exception as e:
+            self.logger.error(f"[SMART_CLEAN] 智能体扫描启动失败: {e}")
+            # 回退到传统扫描
+            return self.start_scan(scan_type, scan_target)
+
+    def _on_agent_scan_completed(self, items: List[ScanItem]):
+        """智能体扫描完成回调
+
+        Args:
+            items: 扫描项列表
+        """
+        self.scan_items = items
+        self.logger.info(f"[SMART_CLEAN] 智能体扫描完成: {len(items)} 项")
+
+        # 进入分析阶段（智能体已经包含分析结果）
+        self._set_phase(SmartCleanPhase.ANALYZING)
+
+        # 转换为 CleanupPlan
+        plan = self._create_plan_from_scan_items(items, "agent_scan")
+
+        self.current_plan = plan
+        self.current_plan.scan_type = self.agent_scanner.scan_type
+
+        self.logger.info(f"[SMART_CLEAN] 智能体分析完成: Safe={plan.safe_count}, "
+                        f"Suspicious={plan.suspicious_count}, "
+                        f"Dangerous={plan.dangerous_count}")
+
+        # 预览阶段
+        self._set_phase(SmartCleanPhase.PREVIEW)
+        self.plan_ready.emit(plan)
+
+    def _create_plan_from_scan_items(self, items: List[ScanItem], scan_type: str) -> CleanupPlan:
+        """从 ScanItem 列表创建 CleanupPlan
+
+        Args:
+            items: 扫描项列表
+            scan_type: 扫描类型
+
+        Returns:
+            CleanupPlan
+        """
+        cleanup_items = []
+        for scan_item in items:
+            cleanup_item = CleanupItem(
+                id=f"item_{len(cleanup_items)}",
+                path=scan_item.path,
+                size=scan_item.size,
+                category=scan_item.category,
+                reason=scan_item.reason,
+                is_safe=scan_item.risk_level == "safe",
+                is_suspicious=scan_item.risk_level == "suspicious",
+                is_dangerous=scan_item.risk_level == "dangerous"
+            )
+            cleanup_items.append(cleanup_item)
+
+        return CleanupPlan(
+            plan_id=f"plan_{int(time.time())}",
+            scan_type=scan_type,
+            scan_target="",
+            items=cleanup_items,
+            total_size=sum(item.size for item in cleanup_items),
+            estimated_freed=sum(item.size for item in cleanup_items if item.is_safe)
+        )
+
+    def execute_cleanup_with_agent(
+        self,
+        selected_items: Optional[List[CleanupItem]] = None
+    ) -> bool:
+        """使用智能体系统执行清理
+
+        Args:
+            selected_items: 选中的清理项
+
+        Returns:
+            是否成功启动
+        """
+        if self.agent_mode == AgentMode.DISABLED:
+            self.logger.info("[SMART_CLEAN] 使用传统执行器")
+            return self.execute_cleanup(selected_items)
+
+        if not self.current_plan:
+            self.logger.error("[SMART_CLEAN] 没有可执行的清理计划")
+            return False
+
+        try:
+            from .agent_adapter import get_agent_executor
+
+            self._set_phase(SmartCleanPhase.EXECUTING)
+            self.logger.info("[SMART_CLEAN] 启动智能体执行")
+
+            items_to_clean = selected_items or self.current_plan.items
+
+            self.agent_executor = get_agent_executor(
+                items=items_to_clean,
+                is_dry_run=self.config.enable_backup,  # 使用备份模式作为演练模式的指示
+                review_enabled=self.config.enable_agent_review
+            )
+
+            # 连接信号
+            self.agent_executor.progress.connect(self.execute_progress.emit)
+            self.agent_executor.execution_completed.connect(self._on_agent_execution_completed)
+            self.agent_executor.execution_failed.connect(self._on_agent_execution_failed)
+
+            # 启动线程
+            self.agent_executor.start()
+            return True
+
+        except Exception as e:
+            self.logger.error(f"[SMART_CLEAN] 智能体执行启动失败: {e}")
+            # 回退到传统执行
+            return self.execute_cleanup(selected_items)
+
+    def _on_agent_execution_completed(self, result):
+        """智能体执行完成回调
+
+        Args:
+            result: 执行结果
+        """
+        self.logger.info(f"[SMART_CLEAN] 智能体执行完成: {result.plan_id}")
+
+        # 保存报告到数据库
+        self._save_agent_report(result)
+
+        self._set_phase(SmartCleanPhase.COMPLETED)
+        self.execution_completed.emit(result)
+
+    def _on_agent_execution_failed(self, plan_id: str, error_message: str):
+        """智能体执行失败回调
+
+        Args:
+            plan_id: 计划ID
+            error_message: 错误信息
+        """
+        self.logger.error(f"[SMART_CLEAN] 智能体执行失败: {plan_id} - {error_message}")
+        self._set_phase(SmartCleanPhase.ERROR)
+        self.execution_failed.emit(plan_id, error_message)
+
+    def _save_agent_report(self, result):
+        """保存智能体执行报告
+
+        Args:
+            result: 执行结果
+        """
+        try:
+            report_data = {
+                'summary': {
+                    'total_items': result.total_items,
+                    'deleted_count': result.deleted_count,
+                    'failed_count': result.failed_count,
+                    'freed_bytes': result.freed_bytes
+                },
+                'statistics': {},
+                'failures': result.errors,
+                'agent_mode': self.agent_mode.value
+            }
+
+            report_id = self.db.save_cleanup_report(result.plan_id, report_data)
+            if report_id:
+                self.logger.info(f"[SMART_CLEAN] 智能体报告已保存: report_id={report_id}")
+
+        except Exception as e:
+            self.logger.error(f"[SMART_CLEAN] 保存智能体报告失败: {e}")
 
 
 # 便利函数

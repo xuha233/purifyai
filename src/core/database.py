@@ -152,6 +152,23 @@ class Database:
             )
         ''')
 
+        # 清理报告汇总表 (Feature 1: Report Persistence)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS cleanup_reports (
+                report_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                plan_id TEXT UNIQUE NOT NULL,
+                execution_id INTEGER,
+                report_summary TEXT NOT NULL,
+                report_statistics TEXT NOT NULL,
+                report_failures TEXT,
+                generated_at TEXT NOT NULL,
+                scan_type TEXT,
+                total_freed_size INTEGER DEFAULT 0,
+                FOREIGN KEY (plan_id) REFERENCES cleanup_plans(plan_id),
+                FOREIGN KEY (execution_id) REFERENCES cleanup_executions(execution_id)
+            )
+        ''')
+
         # 新表的索引
         self._create_smart_cleanup_indexes(cursor)
 
@@ -275,6 +292,10 @@ class Database:
             ('idx_cleanup_executions_status', 'cleanup_executions', 'status'),
             ('idx_recovery_log_plan_id', 'recovery_log', 'plan_id'),
             ('idx_cleanup_reasons_hash', 'cleanup_reasons', 'hash'),
+            # Cleanup reports indexes
+            ('idx_cleanup_reports_plan_id', 'cleanup_reports', 'plan_id'),
+            ('idx_cleanup_reports_generated_at', 'cleanup_reports', 'generated_at'),
+            ('idx_cleanup_reports_scan_type', 'cleanup_reports', 'scan_type'),
         ]
 
         for index_name, table, column in indexes:
@@ -325,42 +346,6 @@ class Database:
         return cursor.lastrowid
 
     def add_or_get_reason(self, reason: str) -> int:
-        """创建智能清理表的索引
-
-        Args:
-            cursor: 数据库游标
-        """
-        indexes = [
-            ('idx_cleanup_plans_scan_type', 'cleanup_plans', 'scan_type'),
-            ('idx_cleanup_plans_status', 'cleanup_plans', 'status'),
-            ('idx_cleanup_items_plan_id', 'cleanup_items', 'plan_id'),
-            ('idx_cleanup_items_status', 'cleanup_items', 'status'),
-            ('idx_cleanup_items_reason_id', 'cleanup_items', 'reason_id'),
-            ('idx_cleanup_executions_plan_id', 'cleanup_executions', 'plan_id'),
-            ('idx_cleanup_executions_status', 'cleanup_executions', 'status'),
-            ('idx_recovery_log_plan_id', 'recovery_log', 'plan_id'),
-            ('idx_cleanup_reasons_hash', 'cleanup_reasons', 'hash'),
-        ]
-
-        for index_name, table, column in indexes:
-            cursor.execute(f'''
-                CREATE INDEX IF NOT EXISTS {index_name}
-                ON {table} ({column})
-            ''')
-        self.logger.info(f"[DATABASE] Created {len(indexes)} smart cleanup indexes")
-
-    def _get_reason_hash(self, reason: str) -> str:
-        """生成原因的 MD5 哈希
-
-        Args:
-            reason: 原因文本
-
-        Returns:
-            MD5 哈希字符串
-        """
-        return hashlib.md5(reason.encode('utf-8')).hexdigest()
-
-    def add_or_get_reason(self, reason: str) -> int:
         """添加或获取原因ID（去重）
 
         Args:
@@ -399,6 +384,17 @@ class Database:
         reason_id = cursor.lastrowid
         conn.commit()
         return reason_id
+
+    def _get_reason_hash(self, reason: str) -> str:
+        """生成原因的 MD5 哈希
+
+        Args:
+            reason: 原因文本
+
+        Returns:
+            MD5 哈希字符串
+        """
+        return hashlib.md5(reason.encode('utf-8')).hexdigest()
 
     def create_cleanup_plan(
         self,
@@ -733,6 +729,239 @@ class Database:
         except Exception as e:
             self.logger.error(f"[DATABASE] 添加恢复记录失败: {e}")
             return None
+
+    # ==========================================================================
+    # 清理报告数据库操作方法 (Feature 1: Report Persistence)
+    # ==========================================================================
+
+    def save_cleanup_report(self, plan_id: str, report_data: Dict) -> Optional[int]:
+        """保存清理报告到数据库
+
+        Args:
+            plan_id: 清理计划ID
+            report_data: 报告数据字典，包含 summary, statistics, failures 等
+
+        Returns:
+            报告ID，失败返回 None
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            now = self.get_current_timestamp()
+
+            # 序列化报告数据为 JSON
+            summary_json = json.dumps(report_data.get('summary', {}), ensure_ascii=False)
+            statistics_json = json.dumps(report_data.get('statistics', {}), ensure_ascii=False)
+            failures_json = json.dumps(report_data.get('failures', []), ensure_ascii=False)
+
+            # 获取扫描类型
+            scan_type = report_data.get('summary', {}).get('scan_type')
+            total_freed_size = report_data.get('summary', {}).get('freed_size_bytes', 0)
+
+            cursor.execute('''
+                INSERT OR REPLACE INTO cleanup_reports
+                (plan_id, report_summary, report_statistics, report_failures,
+                 generated_at, scan_type, total_freed_size)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (plan_id, summary_json, statistics_json, failures_json,
+                  now, scan_type, total_freed_size))
+
+            report_id = cursor.lastrowid
+            conn.commit()
+
+            self.logger.info(f"[DATABASE] 报告已保存: report_id={report_id}, plan_id={plan_id}")
+            return report_id
+
+        except Exception as e:
+            self.logger.error(f"[DATABASE] 保存报告失败: {e}")
+            conn.rollback()
+            return None
+
+    def get_cleanup_report(self, report_id: int = None, plan_id: str = None) -> Optional[Dict[str, Any]]:
+        """获取清理报告
+
+        Args:
+            report_id: 报告ID (如果为 None，则使用 plan_id 查询)
+            plan_id: 计划ID (如果 report_id 为 None 时使用)
+
+        Returns:
+            报告数据字典，失败返回 None
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            if report_id:
+                cursor.execute('''
+                    SELECT * FROM cleanup_reports WHERE report_id = ?
+                ''', (report_id,))
+            elif plan_id:
+                cursor.execute('''
+                    SELECT * FROM cleanup_reports WHERE plan_id = ?
+                ''', (plan_id,))
+            else:
+                return None
+
+            row = cursor.fetchone()
+            if not row:
+                return None
+
+            # 解析 JSON 数据
+            report = dict(row)
+            if isinstance(report.get('report_summary'), str):
+                report['report_summary'] = json.loads(report['report_summary'])
+            if isinstance(report.get('report_statistics'), str):
+                report['report_statistics'] = json.loads(report['report_statistics'])
+            if isinstance(report.get('report_failures'), str):
+                report['report_failures'] = json.loads(report['report_failures'])
+
+            return report
+
+        except Exception as e:
+            self.logger.error(f"[DATABASE] 获取报告失败: {e}")
+            return None
+
+    def get_cleanup_reports(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        scan_type: str = None
+    ) -> List[Dict[str, Any]]:
+        """获取清理报告列表
+
+        Args:
+            limit: 限制数量
+            offset: 偏移量
+            scan_type: 扫描类型过滤
+
+        Returns:
+            报告列表
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            query = '''
+                SELECT report_id, plan_id, generated_at, scan_type, total_freed_size,
+                       report_summary, report_statistics, report_failures
+                FROM cleanup_reports
+            '''
+            params = []
+
+            if scan_type:
+                query += ' WHERE scan_type = ?'
+                params.append(scan_type)
+
+            query += ' ORDER BY generated_at DESC LIMIT ? OFFSET ?'
+            params.extend([limit, offset])
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+            reports = []
+            for row in rows:
+                report = dict(row)
+                # 解析 JSON 数据
+                if isinstance(report.get('report_summary'), str):
+                    report['report_summary'] = json.loads(report['report_summary'])
+                if isinstance(report.get('report_statistics'), str):
+                    report['report_statistics'] = json.loads(report['report_statistics'])
+                if isinstance(report.get('report_failures'), str):
+                    report['report_failures'] = json.loads(report['report_failures'])
+                reports.append(report)
+
+            return reports
+
+        except Exception as e:
+            self.logger.error(f"[DATABASE] 获取报告列表失败: {e}")
+            return []
+
+    def get_cleanup_item(self, item_id: int) -> Optional[Dict[str, Any]]:
+        """获取清理项目
+
+        Args:
+            item_id: 项目ID
+
+        Returns:
+            项目数据字典，失败返回 None
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute('''
+                SELECT ci.*, cr.reason
+                FROM cleanup_items ci
+                LEFT JOIN cleanup_reasons cr ON ci.reason_id = cr.id
+                WHERE ci.id = ?
+            ''', (item_id,))
+
+            row = cursor.fetchone()
+            if row:
+                return dict(row)
+            return None
+
+        except Exception as e:
+            self.logger.error(f"[DATABASE] 获取清理项目失败: {e}")
+            return None
+
+    def get_reports_summary_stats(self) -> Dict[str, Any]:
+        """获取报告统计摘要
+
+        Returns:
+            统计摘要字典
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        try:
+            # 总报告数
+            cursor.execute('SELECT COUNT(*) as total FROM cleanup_reports')
+            total_count = cursor.fetchone()['total']
+
+            # 总释放空间
+            cursor.execute('SELECT SUM(total_freed_size) as total_freed FROM cleanup_reports')
+            total_freed = cursor.fetchone()['total_freed'] or 0
+
+            # 按扫描类型统计
+            cursor.execute('''
+                SELECT scan_type, COUNT(*) as count, SUM(total_freed_size) as freed
+                FROM cleanup_reports
+                GROUP BY scan_type
+                ORDER BY count DESC
+            ''')
+            by_type = {row['scan_type'] or 'unknown': {
+                'count': row['count'],
+                'freed': row['freed'] or 0
+            } for row in cursor.fetchall()}
+
+            # 最近一周报告数
+            import datetime
+            week_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).isoformat()
+            cursor.execute('''
+                SELECT COUNT(*) as count
+                FROM cleanup_reports
+                WHERE generated_at > ?
+            ''', (week_ago,))
+            recent_count = cursor.fetchone()['count']
+
+            return {
+                'total_reports': total_count,
+                'total_freed_size': total_freed,
+                'by_type': by_type,
+                'recent_reports': recent_count
+            }
+
+        except Exception as e:
+            self.logger.error(f"[DATABASE] 获取报告统计失败: {e}")
+            return {
+                'total_reports': 0,
+                'total_freed_size': 0,
+                'by_type': {},
+                'recent_reports': 0
+            }
+
 
     # ==========================================================================
     # 原有数据库操作方法（保持兼容）

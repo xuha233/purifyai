@@ -17,7 +17,7 @@ from typing import List, Optional
 from pathlib import Path
 
 from core.models_smart import CheckResult
-from core.permissions import PermissionManager
+from core.permissions import is_admin
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -32,7 +32,6 @@ class ScanPreChecker:
     def __init__(self):
         """初始化预检查器"""
         self.logger = logger
-        self.permission_mgr = PermissionManager()
 
     def check_scan_path(self, path: str) -> CheckResult:
         """
@@ -92,9 +91,13 @@ class ScanPreChecker:
 
         # 检查每个路径的权限
         for path in paths:
-            path_result = self.permission_mgr.check_read_permission(path)
-            if not path_result:
-                result.add_issue(f"无权限访问路径: {path}")
+            if not os.path.exists(path):
+                result.add_issue(f"路径不存在: {path}")
+                continue
+
+            # 使用 os.access 检查读取权限
+            if not os.access(path, os.R_OK):
+                result.add_issue(f"无读取权限: {path}")
             else:
                 self.logger.debug(f"[PRECHECK] 有权限访问: {path}")
 
@@ -102,7 +105,7 @@ class ScanPreChecker:
         needs_admin = False
         for path in paths:
             if self._requires_admin(path):
-                if not self.permission_mgr.is_admin():
+                if not is_admin():
                     result.add_issue(f"路径 {path} 需要管理员权限，但当前未以管理员身份运行")
                     needs_admin = True
                 else:
