@@ -192,7 +192,11 @@ class ScannerAdapter(QThread):
 
     @property
     def results(self):
-        # 优先返回内部结果，备用scanner的results
+        """获取扫描结果 - 直接从 scanner 获取"""
+        # 优先返回 scanner 的 scan_results，这是扫描线程实际更新的结果
+        if hasattr(self.scanner, 'scan_results'):
+            return self.scanner.scan_results
+        # 备用：返回内部 _results（如果 _on_complete 被正确调用了）
         if self._results:
             return self._results
         return getattr(self.scanner, 'results', [])

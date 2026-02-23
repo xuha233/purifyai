@@ -460,111 +460,50 @@ class CleanupItemCard(SimpleCardWidget):
         return f"{size:.1f} TB"
 
 
-class PhaseIndicator(QWidget):
-    """阶段指示器"""
+class PhaseIndicator(QLabel):
+    """简洁的阶段指示器 - 卡片式设计"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_phase = 0
         self.phases = [
-            ("扫描", "scan"),
-            ("分析", "analyze"),
-            ("预览", "preview"),
-            ("执行", "execute"),
-            ("完成", "complete")
+            "1. 扫描系统",
+            "2. AI 智能分析",
+            "3. 预览清理项",
+            "4. 执行清理"
         ]
         self.init_ui()
 
     def init_ui(self):
         """初始化 UI"""
-        self.setFixedHeight(48)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(20, 0, 20, 0)
+        self.setFixedHeight(32)
+        self.setAlignment(Qt.AlignCenter)
+        self.update_display()
 
-        self.indicators = []
-        for i, (name, _) in enumerate(self.phases):
-            # 阶段圆圈
-            circle = QLabel()
-            circle.setFixedSize(32, 32)
-            circle.setAlignment(Qt.AlignCenter)
-            circle.setText(str(i + 1))
-            circle.setStyleSheet('''
-                QLabel {
-                    background: #e0e0e0;
-                    color: #999;
-                    border-radius: 16px;
-                    font-size: 14px;
-                    font-weight: 600;
-                }
-            ''')
-
-            # 阶段标签
-            label = QLabel(name)
-            label.setStyleSheet('color: #999; font-size: 12px;')
-
-            container = QWidget()
-            container_layout = QHBoxLayout(container)
-            container_layout.setContentsMargins(0, 0, 0, 0)
-            container_layout.setSpacing(6)
-            container_layout.addWidget(circle)
-            container_layout.addWidget(label)
-
-            self.indicators.append((circle, label))
-            layout.addWidget(container)
-
-            # 连接线
-            if i < len(self.phases) - 1:
-                line = QLabel()
-                line.setMinimumWidth(40)
-                line.setStyleSheet('background: #e0e0e0; height: 2px;')
-                layout.addWidget(line)
-
-        layout.addStretch()
+    def update_display(self):
+        """更新显示"""
+        active_text = self.phases[self.current_phase]
+        self.setText(active_text)
+        self.setStyleSheet(f'''
+            QLabel {{
+                background: #e3f2fd;
+                color: #0078D4;
+                padding: 8px 24px;
+                border-radius: 16px;
+                font-size: 14px;
+                font-weight: 600;
+            }}
+        ''')
+        self.update()
 
     def update_phase(self, phase_index: int):
         """更新阶段
 
         Args:
-            phase_index: 当前阶段索引 (0-4)
+            phase_index: 当前阶段索引 (0-3)
         """
-        self.current_phase = phase_index
-        for i, (circle, label) in enumerate(self.indicators):
-            if i < phase_index:
-                # 已完成
-                circle.setStyleSheet('''
-                    QLabel {
-                        background: #28a745;
-                        color: white;
-                        border-radius: 16px;
-                        font-size: 14px;
-                        font-weight: 600;
-                    }
-                ''')
-                label.setStyleSheet('color: #28a745; font-size: 12px; font-weight: 600;')
-            elif i == phase_index:
-                # 当前阶段
-                circle.setStyleSheet('''
-                    QLabel {
-                        background: #0078D4;
-                        color: white;
-                        border-radius: 16px;
-                        font-size: 14px;
-                        font-weight: 600;
-                    }
-                ''')
-                label.setStyleSheet('color: #0078D4; font-size: 12px; font-weight: 600;')
-            else:
-                # 待完成
-                circle.setStyleSheet('''
-                    QLabel {
-                        background: #e0e0e0;
-                        color: #999;
-                        border-radius: 16px;
-                        font-size: 14px;
-                        font-weight: 600;
-                    }
-                ''')
-                label.setStyleSheet('color: #999; font-size: 12px;')
+        self.current_phase = min(max(phase_index, 0), len(self.phases) - 1)
+        self.update_display()
 
 
 class SmartCleanupPage(QWidget):
@@ -1185,14 +1124,14 @@ class SmartCleanupPage(QWidget):
 
     def _on_phase_changed(self, phase: str):
         """阶段变化回调"""
-        # 更新阶段指示器
+        # 更新阶段指示器（4个阶段）
         phase_map = {
             'idle': 0,
-            'scanning': 1,
-            'analyzing': 2,
-            'preview': 3,
-            'executing': 4,
-            'completed': 5,
+            'scanning': 0,
+            'analyzing': 1,
+            'preview': 2,
+            'executing': 3,
+            'completed': 3,
             'error': 0
         }
         self.phase_indicator.update_phase(phase_map.get(phase, 0))
