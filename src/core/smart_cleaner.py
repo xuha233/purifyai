@@ -195,10 +195,14 @@ class ScannerAdapter(QThread):
         """获取扫描结果 - 直接从 scanner 获取"""
         # 优先返回 scanner 的 scan_results，这是扫描线程实际更新的结果
         if hasattr(self.scanner, 'scan_results'):
-            return self.scanner.scan_results
+            scan_items = self.scanner.scan_results
+            self.logger.debug(f"[ScannerAdapter] results: 返回 scanner.scan_results, 数量={len(scan_items)}")
+            return scan_items
         # 备用：返回内部 _results（如果 _on_complete 被正确调用了）
         if self._results:
+            self.logger.debug(f"[ScannerAdapter] results: 返回内部 _results, 数量={len(self._results)}")
             return self._results
+        self.logger.debug("[ScannerAdapter] results: 无可用结果，返回空列表")
         return getattr(self.scanner, 'results', [])
 
 
@@ -386,8 +390,18 @@ class ScanThread(QThread):
                 return
 
             # 获取扫描结果
+            # 先直接检查 scanner 的 scan_results 用于调试
+            direct_scan_results = scanner_adapter.scanner.scan_results if hasattr(scanner_adapter.scanner, 'scan_results') else []
+            self.logger.info(f"[SMART_CLEAN] scanner.scan_results 直接检查: {len(direct_scan_results)} 项")
+
             items = scanner_adapter.results
             self.logger.info(f"[SMART_CLEAN] 从适配器获取结果: {len(items)} 项")
+
+            # 检查是否一致
+            if len(direct_scan_results) != len(items):
+                self.logger.warning(f"[SMART_CLEAN] 结果数量不一致！直接={len(direct_scan_results)}, 适配器={len(items)}")
+                # 直接使用 scan_results 的结果
+                items = direct_scan_results
 
             debug_event('INFO', 'ScanThread', 'run',
                        '获取扫描结果',
