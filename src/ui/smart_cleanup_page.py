@@ -679,6 +679,14 @@ class SmartCleanupPage(QWidget):
         self.main_action_btn.setMinimumWidth(140)
         actions_layout.addWidget(self.main_action_btn)
 
+        # AI 一键清理按钮（新增）
+        self.auto_clean_btn = PushButton(FluentIcon.ROBOT, "🤖 AI 一键清理")
+        self.auto_clean_btn.setFixedHeight(40)
+        self.auto_clean_btn.setMinimumWidth(160)
+        self.auto_clean_btn.clicked.connect(self._on_auto_clean_clicked)
+        self.auto_clean_btn.setVisible(False)  # 只在 PREVIEW 阶段显示
+        actions_layout.addWidget(self.auto_clean_btn)
+
         main_layout.addLayout(actions_layout)
 
         # 初始化统计
@@ -1044,6 +1052,47 @@ class SmartCleanupPage(QWidget):
         self._clear_items()
         self._set_ui_state('idle')
 
+    def _on_auto_clean_clicked(self):
+        """AI 一键清理按钮点击事件"""
+        if not self.current_plan:
+            InfoBar.warning("提示", "没有可执行的清理计划",
+                        parent=self, position=InfoBarPosition.TOP)
+            return
+
+        # AI 自动决策
+        auto_select_suspicious = self.config.auto_execute_suspicious
+        selected_items = self.cleaner.auto_select_items(auto_select_suspicious)
+
+        if not selected_items:
+            InfoBar.info("提示", "没有符合条件的项目可清理",
+                     parent=self, position=InfoBarPosition.TOP)
+            return
+
+        # 确认对话框
+        total_size = sum(item.size for item in selected_items)
+        safe_count = sum(1 for i in selected_items if i.is_safe)
+        suspicious_count = sum(1 for i in selected_items if i.is_suspicious)
+
+        message = (
+            f"AI 自动决策将清理以下项目：\n"
+            f"• 安全项: {safe_count}\n"
+            f"• 疑似项: {suspicious_count}\n"
+            f"• 危险项: 已跳过\n\n"
+            f"预计释放空间: {self._format_size(total_size)}\n\n"
+            f"⚠️此操作不可撤销，是否继续？"
+        )
+
+        msg_box = MessageBox("AI 一键清理确认", message, self)
+        msg_box.yesButton.setText("确认清理")
+        msg_box.cancelButton.setText("取消")
+
+        if msg_box.exec() != MessageBox.Yes:
+            return
+
+        self.logger.info(f"[UI] AI 一键清理: {len(selected_items)} 项")
+        self.cleaner.execute_auto_cleanup()
+        self._set_ui_state('executing')
+
     def toggle_ai(self, enabled: bool):
         """切换 AI 状态"""
         self.config.enable_ai = enabled
@@ -1295,6 +1344,7 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setIcon(FluentIcon.SEARCH)
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
+            self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
             self.status_label.setText("准备就绪，请选择扫描类型开始")
@@ -1311,6 +1361,7 @@ class SmartCleanupPage(QWidget):
 
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
+            self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
 
@@ -1326,6 +1377,7 @@ class SmartCleanupPage(QWidget):
 
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
+            self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
 
         elif state == 'preview':
             self.phase_indicator.update_phase(3)
@@ -1334,6 +1386,7 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setIcon(FluentIcon.DELETE)
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
+            self.auto_clean_btn.setVisible(True)  # 显示 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(True)
             self.clear_selection_btn.setEnabled(True)
             self.status_label.setText(f"发现 {len(self.current_plan.items) if self.current_plan else 0} 个可清理项")
@@ -1344,6 +1397,7 @@ class SmartCleanupPage(QWidget):
             self.status_label.setText("清理中...")
             self.main_action_btn.setEnabled(False)
             self.cancel_btn.setVisible(True)
+            self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(False)
             self.clear_selection_btn.setEnabled(False)
 
@@ -1354,6 +1408,7 @@ class SmartCleanupPage(QWidget):
             self.main_action_btn.setIcon(FluentIcon.SYNC)
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
+            self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.auto_select_safe_btn.setEnabled(True if self.item_cards else False)
             self.clear_selection_btn.setEnabled(True if self.item_cards else False)
             self.status_label.setText("清理完成")
@@ -1363,6 +1418,7 @@ class SmartCleanupPage(QWidget):
             self.progress_bar.setVisible(False)
             self.main_action_btn.setEnabled(True)
             self.cancel_btn.setVisible(False)
+            self.auto_clean_btn.setVisible(False)  # 隐藏 AI 一键清理按钮
             self.status_label.setText("发生错误")
 
     def _load_items_from_plan(self, plan: CleanupPlan):

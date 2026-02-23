@@ -268,6 +268,12 @@ class SmartCleanConfig:
     min_size_mb: int = 0                 # 最小文件大小 (MB)
     exclude_patterns: List[str] = None   # 排除模式
 
+    # AI 托管配置（新增）
+    auto_execute_safe: bool = True         # 自动执行 Safe 项
+    auto_execute_suspicious: bool = True   # 自动执行 Suspicious 项
+    auto_skip_dangerous: bool = True       # 自动跳过 Dangerous 项
+    confirm_before_auto_clean: bool = True  # 自动清理前确认
+
     def __post_init__(self):
         if self.exclude_patterns is None:
             self.exclude_patterns = []
@@ -772,6 +778,63 @@ class SmartCleaner(QObject):
         self._set_phase(SmartCleanPhase.IDLE)
         self.scan_items = []
         self.current_plan = None
+
+    def auto_select_items(
+        self,
+        auto_select_suspicious: bool = True
+    ) -> List[CleanupItem]:
+        """
+        AI 自动决策选择清理项
+
+        Args:
+            auto_select_suspicious: 是否自动选择 Suspicious 项
+
+        Returns:
+            选中的清理项列表
+        """
+        if not self.current_plan:
+            self.logger.warning("[SMART_CLEAN] 无清理计划")
+            return []
+
+        selected = []
+        for item in self.current_plan.items:
+            if item.is_safe:
+                selected.append(item)
+            elif auto_select_suspicious and item.is_suspicious:
+                selected.append(item)
+            # Dangerous 项不自动选择
+
+        self.logger.info(
+            f"[SMART_CLEAN] AI 自动决策: "
+            f"Safe={sum(1 for i in selected if i.is_safe)}, "
+            f"Suspicious={sum(1 for i in selected if i.is_suspicious)}"
+        )
+
+        return selected
+
+    def execute_auto_cleanup(self) -> bool:
+        """
+        执行 AI 自动清理
+
+        Returns:
+            是否成功启动
+        """
+        if not self.current_plan:
+            self.logger.warning("[SMART_CLEAN] 无清理计划")
+            return False
+
+        auto_select_suspicious = (
+            self.config.auto_execute_safe or
+            self.config.auto_execute_suspicious
+        )
+
+        items_to_clean = self.auto_select_items(auto_select_suspicious)
+
+        if not items_to_clean:
+            self.logger.info("[SMART_CLEAN] 无可清理项目")
+            return False
+
+        return self.execute_cleanup(items_to_clean)
 
 
 # 便利函数
