@@ -72,24 +72,26 @@ class ScannerAdapter(QThread):
                    '连接扫描器信号',
                    scanner_type=type(self.scanner).__name__)
 
-        # 使用 QueuedConnection 确保从 threading.Thread 发射的信号在 QThread 中被处理
+        # _on_complete 需要使用 DirectConnection，因为 ScanThread 在等待
+        # 而不进入事件循环，QueuedConnection 的信号会被积压无法处理
+        if hasattr(self.scanner, 'complete'):
+            self.scanner.complete.connect(self._on_complete, Qt.DirectConnection)
+            debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
+                       '已连接 complete 信号 (DirectConnection)')
+
+        # 其他信号使用 AutoConnection，让 Qt 自动选择最佳策略
         if hasattr(self.scanner, 'item_found'):
-            self.scanner.item_found.connect(self.item_found.emit, Qt.QueuedConnection)
+            self.scanner.item_found.connect(self.item_found.emit, Qt.AutoConnection)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 item_found 信号')
 
-        if hasattr(self.scanner, 'complete'):
-            self.scanner.complete.connect(self._on_complete, Qt.QueuedConnection)
-            debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
-                       '已连接 complete 信号')
-
         if hasattr(self.scanner, 'error'):
-            self.scanner.error.connect(self.error.emit, Qt.QueuedConnection)
+            self.scanner.error.connect(self.error.emit, Qt.AutoConnection)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 error 信号')
 
         if hasattr(self.scanner, 'progress'):
-            self.scanner.progress.connect(self._translate_progress, Qt.QueuedConnection)
+            self.scanner.progress.connect(self._translate_progress, Qt.AutoConnection)
             debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
                        '已连接 progress 信号')
 
