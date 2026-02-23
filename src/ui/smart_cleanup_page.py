@@ -12,7 +12,7 @@ Design V2.0
 """
 import os
 from typing import Optional, List, Dict
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QPointF, QRectF
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout,
     QScrollArea, QFrame, QSplitter, QStackedWidget, QAbstractItemView,
@@ -136,6 +136,113 @@ class StatCard(SimpleCardWidget):
         """鼠标点击事件"""
         super().mousePressEvent(event)
         self.clicked.emit()
+
+
+class SpinnerWidget(QWidget):
+    """旋转加载动画组件"""
+
+    def __init__(self, size=24, color="#0078D4", parent=None):
+        super().__init__(parent)
+        self._angle = 0
+        self._size = size
+        self._color = color
+        self.setFixedSize(size, size)
+        self._animation = QPropertyAnimation(self, b"rotation")
+        self._animation.setDuration(800)
+        self._animation.setStartValue(0)
+        self._animation.setEndValue(360)
+        self._animation.setLoopCount(-1)  # 无限循环
+        self._animation.setEasingCurve(QEasingCurve.Linear)
+
+    @pyqtProperty(float)
+    def rotation(self) -> float:
+        return self._angle
+
+    @rotation.setter
+    def rotation(self, value: float):
+        self._angle = value
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # 设置画笔
+        pen = QPen(QColor(self._color), 3)
+        painter.setPen(pen)
+
+        # 绘制旋转的圆弧
+        rect = QRectF(2, 2, self._size - 4, self._size - 4)
+
+        # 绘制4段圆弧，形成加载效果
+        start_angle = int(self._angle)
+        for i in range(4):
+            span = 45  # 每段45度
+            draw_start = start_angle + i * 90
+            painter.drawArc(rect, draw_start * 16, span * 16)
+
+    def start(self):
+        """启动动画"""
+        self._animation.start()
+        self.setVisible(True)
+
+    def stop(self):
+        """停止动画"""
+        self._animation.stop()
+        self.setVisible(False)
+
+
+class ScanInfoCard(SimpleCardWidget):
+    """扫描信息卡片 - 实时显示扫描状态"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedHeight(100)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 12, 16, 12)
+
+        # 标题
+        title = BodyLabel("扫描进度")
+        title.setStyleSheet('font-size: 12px; color: #999;')
+        layout.addWidget(title)
+
+        # 当前扫描路径
+        self.current_path_label = StrongBodyLabel("")
+        self.current_path_label.setWordWrap(True)
+        self.current_path_label.setStyleSheet('font-size: 13px; color: #333;')
+        self.current_path_label.setText("等待开始...")
+        layout.addWidget(self.current_path_label)
+
+        # 扫描详情
+        self.scan_detail_label = BodyLabel("")
+        self.scan_detail_label.setStyleSheet('font-size: 11px; color: #666;')
+        self.scan_detail_label.setText("")
+        layout.addWidget(self.scan_detail_label)
+
+    def set_current_path(self, path: str, detail: str = ""):
+        """设置当前扫描路径"""
+        # 缩短过长的路径
+        if len(path) > 60:
+            path = "..." + path[-57:]
+        self.current_path_label.setText(f"正在扫描: {path}")
+        if detail:
+            self.scan_detail_label.setText(detail)
+        else:
+            self.scan_detail_label.setText("")
+
+    def set_analyzing(self, detail: str = ""):
+        """设置分析状态"""
+        self.current_path_label.setText("正在分析扫描结果...")
+        if detail:
+            self.scan_detail_label.setText(detail)
+        else:
+            self.scan_detail_label.setText("")
+
+    def clear(self):
+        """清除信息"""
+        self.current_path_label.setText("等待开始...")
+        self.scan_detail_label.setText("")
 
 
 class CleanupItemCard(SimpleCardWidget):
@@ -461,6 +568,7 @@ class SmartCleanupPage(QWidget):
 
         # 当前状态
         self.state = 'idle'  # idle, scanning, analyzing, preview, executing, completed, error
+        self._scan_start_time = 0  # 扫描开始时间
 
         # 连接信号
         self._connect_signals()
@@ -541,6 +649,29 @@ class SmartCleanupPage(QWidget):
         self.status_label.setStyleSheet('color: #666; font-size: 13px;')
         header_layout.addWidget(self.status_label)
 
+        # ===== 扫描进度状态卡 =====
+        self.scan_info_card = ScanInfoCard()
+        self.scan_info_card.setVisible(False)
+        main_layout.addWidget(self.scan_info_card)
+
+        # ===== 扫描动画指示器（旋转加载动画） =====
+        scan_ind_row = QWidget()
+        scan_ind_layout = QHBoxLayout(scan_ind_row)
+        scan_ind_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.scan_indicator = SpinnerWidget(size=32, color="#0078D4")
+        self.scan_indicator.setVisible(False)
+        scan_ind_layout.addWidget(self.scan_indicator)
+
+        # 当前扫描路径显示
+        self.scan_current_path_label = BodyLabel("")
+        self.scan_current_path_label.setStyleSheet('color: #0078D4; font-size: 14px; font-weight: bold;')
+        self.scan_current_path_label.setVisible(False)
+        scan_ind_layout.addWidget(self.scan_current_path_label)
+        scan_ind_layout.addStretch()
+
+        header_layout.addWidget(scan_ind_row)
+
         main_layout.addLayout(header_layout)
 
         # ========== 主体：三栏布局 ==========
@@ -604,6 +735,12 @@ class SmartCleanupPage(QWidget):
 
         # 初始化统计
         self._update_empty_stats()
+
+        # 超时检测定时器（60秒无响应则报告）
+        self.timeout_timer = QTimer()
+        self.timeout_timer.setSingleShot(True)
+        self.timeout_timer.timeout.connect(self._on_timeout)
+        self.last_activity_time = 0
 
     def _create_config_panel(self) -> QWidget:
         """创建配置面板"""
@@ -842,9 +979,73 @@ class SmartCleanupPage(QWidget):
         scan_target = ""
 
         self.logger.info(f"[UI] 开始扫描: {scan_type}")
+        self._scan_start_time = __import__('time').time()
+
+        # 启动超时检测
+        self._start_timeout_timer()
+
+        # 启动旋转动画和扫描信息卡片
+        self.scan_indicator.start()
+        self.scan_info_card.setVisible(True)
+        self.scan_info_card.set_current_path(f"正在扫描: {scan_type}", "初始化扫描器...")
+        self.scan_current_path_label.setVisible(True)
+        self.scan_current_path_label.setText(f"扫描中...")
+
+        # 启动实时路径更新定时器（每2秒更新一次）
+        self.scan_path_timer = QTimer()
+        self.scan_path_timer.timeout.connect(self._update_scan_path)
+        self.scan_path_timer.start(2000)
+
         self.cleaner.start_scan(scan_type, scan_target)
         self.current_plan = None
         self._set_ui_state('scanning')
+
+    def _update_scan_path(self):
+        """实时更新扫描路径显示"""
+        if self.state != 'scanning':
+            return
+
+        import time
+        elapsed = time.time() - self._scan_start_time
+
+        scan_type_map = ["system", "browser", "appdata", "custom"]
+        idx = self.scan_type_combo.currentIndex()
+        scan_types = ["system", "browser", "appdata", "custom"]
+        if idx >= 0 and idx < len(scan_types):
+            scan_type = scan_types[idx]
+
+        # 不同扫描类型的说明
+        type_info = {
+            'system': {
+                'name': '系统垃圾扫描',
+                'items': ['临时文件', '预取缓存', '系统日志', '更新缓存']
+            },
+            'browser': {
+                'name': '浏览器缓存扫描',
+                'items': ['Chrome 缓存', 'Edge 缓存', 'Firefox 缓存']
+            },
+            'appdata': {
+                'name': 'AppData 文件夹扫描',
+                'items': ['Roaming', 'Local', 'LocalLow']
+            },
+            'custom': {
+                'name': '自定义路径扫描',
+                'items': ['自定义路径']
+            }
+        }.get(scan_type, {'name': f'{scan_type} 扫描', 'items': []})
+
+        items = type_info['items']
+        current_item_idx = min(int(elapsed / 5) % len(items), len(items) - 1)
+        current_item = items[current_item_idx]
+
+        # 计算估计进度（基于时间）
+        estimated_minutes = max(1, 5 - int(elapsed / 60))
+        progress_info = f"已用时: {int(elapsed)}秒 (预计还需 ~{estimated_minutes}分钟)"
+
+        self.scan_info_card.set_current_path(
+            f"{type_info['name']} - {current_item}",
+            progress_info
+        )
 
     def _on_execute_cleanup(self):
         """执行清理"""
@@ -963,9 +1164,7 @@ class SmartCleanupPage(QWidget):
 
     def _on_phase_changed(self, phase: str):
         """阶段变化回调"""
-        self.phase_label.setText(f"阶段: {phase}")
-        self.cleanup_phase_changed.emit(phase)
-
+        # 更新阶段指示器
         phase_map = {
             'idle': 0,
             'scanning': 1,
@@ -975,22 +1174,93 @@ class SmartCleanupPage(QWidget):
             'completed': 5,
             'error': 0
         }
-
         self.phase_indicator.update_phase(phase_map.get(phase, 0))
+
+        # 更新状态标签
+        phase_names = {
+            'idle': '准备就绪',
+            'scanning': '扫描中...',
+            'analyzing': 'AI 分析中...',
+            'preview': '预览计划',
+            'executing': '执行清理中...',
+            'completed': '清理完成',
+            'error': '发生错误'
+        }
+        self.status_label.setText(phase_names.get(phase, phase))
+        self.cleanup_phase_changed.emit(phase)
 
     def _on_scan_progress(self, current: int, total: int):
         """扫描进度回调"""
+        # 启动扫描动画（仅当尚未启动时）
+        if hasattr(self, 'scan_indicator') and not self.scan_indicator.isVisible():
+            self.scan_indicator.start()
+
         if total > 0:
             percent = int(current / total * 100)
             self.progress_bar.setValue(percent)
             self.status_label.setText(f"扫描中... {current}/{total} ({percent}%)")
+        else:
+            self.progress_bar.setRange(0, 0)  # 不确定进度，显示忙碌动画
+            self.status_label.setText("正在扫描...")
 
     def _on_analyze_progress(self, current: int, total: int):
         """分析进度回调"""
+        # 更新最后活动时间
+        import time
+        self.last_activity_time = time.time()
+
+        # 停止扫描动画，启动分析动画
+        if hasattr(self, 'scan_indicator'):
+            self.scan_indicator.stop()
+            # 保持指示器可见但改为分析状态颜色
+            pass
+
+        self.scan_info_card.set_analyzing(f"A正在分析 {current}/{total} 个项目...")
+
         if total > 0:
             percent = int(current / total * 100)
             self.progress_bar.setValue(percent)
             self.status_label.setText(f"AI 分析中... {current}/{total} ({percent}%)")
+        else:
+            self.progress_bar.setRange(0, 0)
+            self.status_label.setText("AI 分析中...")
+
+    def _on_timeout(self):
+        """超时检测"""
+        import time
+        elapsed = time.time() - self.last_activity_time
+        if elapsed >= 60:
+            self.logger.warning(f"[UI:SMART_CLEANUP] 检测到超时卡住 ({elapsed:.1f}s)")
+            self.status_label.setText("⚠️ 检测到卡住，请检查日志或重启")
+
+            # 尝试发送取消信号
+            if hasattr(self, 'cleaner') and self.cleaner:
+                try:
+                    self.cleaner.cancel()
+                except:
+                    pass
+
+            InfoBar.warning(
+                "操作超时",
+                f"操作已超过 60 秒无响应。\n"
+                f"当前状态: {self.status_label.text()}\n"
+                f"请检查后台日志获取详细信息。",
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=8000
+            )
+            # 重置UI状态
+            self._set_ui_state('idle')
+
+    def _start_timeout_timer(self):
+        """启动超时检测"""
+        import time
+        self.last_activity_time = time.time()
+        self.timeout_timer.start(60000)  # 60秒超时
+
+    def _stop_timeout_timer(self):
+        """停止超时检测"""
+        self.timeout_timer.stop()
 
     def _on_execute_progress(self, current: int, total: int):
         """执行进度回调"""
@@ -1040,6 +1310,18 @@ class SmartCleanupPage(QWidget):
     def _set_ui_state(self, state: str):
         """设置 UI 状态"""
         self.state = state
+
+        # 停止动画和超时检测
+        if hasattr(self, 'scan_indicator'):
+            self.scan_indicator.stop()
+        if hasattr(self, 'scan_animation'):
+            self.scan_animation.stop()
+        if hasattr(self, 'scan_path_timer'):
+            self.scan_path_timer.stop()
+        self.scan_indicator.setVisible(False)
+        self.scan_info_card.setVisible(False)
+        self.scan_current_path_label.setVisible(False)
+        self._stop_timeout_timer()
 
         if state == 'idle':
             self.phase_indicator.update_phase(0)

@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import threading
 import time
@@ -11,6 +12,7 @@ from PyQt5.QtCore import QSettings
 from .database import get_database
 from .rule_engine import RuleEngine, RiskLevel, get_rule_engine
 from utils.logger import get_logger, log_scan_event, log_file_operation, log_performance
+from utils.debug_tracker import debug_event, debug_exception, timing_context, get_debug_summary, get_performance_stats
 
 
 logger = get_logger(__name__)
@@ -172,36 +174,96 @@ class SystemScanner(QObject):
 
     # 静态方法：获取目录大小（支持取消标志）
     @staticmethod
-    def _get_directory_size(path: str, cancel_flag=None) -> int:
-        """Get directory size with optional cancel support
+    def _get_directory_size(path: str, cancel_flag=None, timeout_seconds=30, max_files=10000) -> int:
+        """Get directory size with optional cancel support and progress reporting
 
         Args:
             path: Directory path
             cancel_flag: Optional function that returns True if cancelled
+            timeout_seconds: Timeout in seconds to prevent hanging
 
         Returns:
             Total size in bytes
         """
+        start_time = time.time()
+
+        debug_event('DEBUG', 'SystemScanner', '_get_directory_size',
+                   f'开始计算目录大小: {path}',
+                   path=path)
+
         try:
+            # 检查目录是否存在和是否可访问
+            dir_path = Path(path)
+            if not dir_path.exists() or not dir_path.is_dir():
+                return 0
+
             total = 0
             count = 0
-            for f in Path(path).glob('**/*'):
-                # 检查取消标志
-                if cancel_flag and cancel_flag():
-                    return -1  # 返回 -1 表示被取消
+            last_report_time = time.time()
+            last_progress_files = 0
 
-                if f.is_file():
-                    try:
-                        total += f.stat().st_size
-                    except (OSError, PermissionError):
-                        pass
+            # 使用递归但设置超时保护
+            def walk_with_timeout(d):
+                nonlocal total, count, last_report_time, last_progress_files
+                try:
+                    # 使用 os.scandir 比 Path.glob 更快
+                    with os.scandir(d) as scandir_it:
+                        for entry in scandir_it:
+                            if cancel_flag and cancel_flag():
+                                return
+                            # 超时检查
+                            if time.time() - start_time > timeout_seconds:
+                                logger.warning(f"[扫描:SIZE] 计算目录大小超时: {path} (已过 {timeout_seconds}秒)")
+                                return
+                            # 最大文件数检查
+                            if count >= max_files:
+                                logger.warning(f"[扫描:SIZE] 计算目录大小已达到最大文件数限制: {path} ({max_files})")
+                                return
 
-                # 每100个文件检查一次取消状态
-                count += 1
-                if count % 100 == 0 and cancel_flag and cancel_flag():
-                    return -1
+                            try:
+                                if entry.is_file():
+                                    try:
+                                        total += entry.stat().st_size
+                                    except (OSError, PermissionError):
+                                        pass
+                                    count += 1
+                                elif entry.is_dir():
+                                    # 递归进入子目录
+                                    try:
+                                        walk_with_timeout(Path(entry.path))
+                                    except (PermissionError, OSError):
+                                        pass
+                            except (PermissionError, OSError):
+                                pass
+
+                            # 进度报告
+                            current_time = time.time()
+                            if count - last_progress_files >= 100 or (current_time - last_report_time) >= 2.0:
+                                logger.debug(f"[扫描:SIZE] 扫描中: {path} - 已处理 {count} 个文件, 大小: {total/1024/1024:.2f}MB, 耗时: {current_time - start_time:.1f}秒")
+                                last_report_time = current_time
+                                last_progress_files = count
+                except (PermissionError, OSError) as e:
+                    # 对于根目录级别的权限错误，记录日志但不抛出
+                    logger.debug(f"[扫描:SIZE] 无法访问目录: {d}, 错误: {e}")
+
+            walk_with_timeout(dir_path)
+
+            duration = time.time() - start_time
+            logger.info(f"[扫描:SIZE] 完成计算 {path}: {count} 个文件, {total/1024/1024:.2f}MB, 耗时: {duration:.2f}秒")
+            debug_event('INFO', 'SystemScanner', '_get_directory_size',
+                       '计算完成',
+                       path=path,
+                       file_count=count,
+                       size_bytes=total,
+                       size_mb=total/1024/1024,
+                       duration_seconds=duration)
+
             return total
-        except Exception:
+        except Exception as e:
+            duration = time.time() - start_time
+            logger.error(f"[扫描:ERROR] 计算目录大小失败 {path}: {str(e)}, 耗时: {duration:.2f}秒")
+            debug_exception('SystemScanner', '_get_directory_size',
+                          '计算目录大小异常', exc_info=sys.exc_info(), path=path)
             return 0
 
     @staticmethod
@@ -284,30 +346,43 @@ class SystemScanner(QObject):
                     logger.info("[扫描:CANCEL] 扫描被用户取消")
                     break
 
+                type_start = time.time()
+                logger.info(f"[扫描:PROGRESS] 开始扫描 {scan_type} ({i+1}/{total_types})")
                 self.progress.emit(f'Scanning {scan_type}... ({i+1}/{total_types})')
                 logger.debug(f"[扫描:PROGRESS] 开始扫描 {scan_type} ({i+1}/{total_types})")
 
-                type_start = time.time()
                 if scan_type == 'temp':
                     items_before = len(self.scan_results)
+                    logger.debug(f"[扫描:TEMP] 开始扫描 temp 目录")
                     self._scan_temp_directories()
                     items_found = len(self.scan_results) - items_before
-                    log_performance(logger, f"扫描 temp", int((time.time() - type_start) * 1000), items=items_found)
+                    duration = int((time.time() - type_start) * 1000)
+                    logger.info(f"[扫描:INFO] 扫描 temp 耗时: {duration}ms items={items_found} 发现: {items_found > 0}")
+                    log_performance(logger, f"扫描 temp", duration, items=items_found)
                 elif scan_type == 'prefetch':
                     items_before = len(self.scan_results)
+                    logger.debug(f"[扫描:PREFETCH] 开始扫描 prefetch 目录")
                     self._scan_prefetch()
                     items_found = len(self.scan_results) - items_before
-                    log_performance(logger, f"扫描 prefetch", int((time.time() - type_start) * 1000), items=items_found)
+                    duration = int((time.time() - type_start) * 1000)
+                    logger.info(f"[扫描:INFO] 扫描 prefetch 耗时: {duration}ms items={items_found}")
+                    log_performance(logger, f"扫描 prefetch", duration, items=items_found)
                 elif scan_type == 'logs':
                     items_before = len(self.scan_results)
+                    logger.debug(f"[扫描:LOGS] 开始扫描 logs 目录")
                     self._scan_logs()
                     items_found = len(self.scan_results) - items_before
-                    log_performance(logger, f"扫描 logs", int((time.time() - type_start) * 1000), items=items_found)
+                    duration = int((time.time() - type_start) * 1000)
+                    logger.info(f"[扫描:INFO] 扫描 logs 耗时: {duration}ms items={items_found}")
+                    log_performance(logger, f"扫描 logs", duration, items=items_found)
                 elif scan_type == 'update_cache':
                     items_before = len(self.scan_results)
+                    logger.debug(f"[扫描:UPDATE_CACHE] 开始扫描 update_cache 目录")
                     self._scan_update_cache()
                     items_found = len(self.scan_results) - items_before
-                    log_performance(logger, f"扫描 update_cache", int((time.time() - type_start) * 1000), items=items_found)
+                    duration = int((time.time() - type_start) * 1000)
+                    logger.info(f"[扫描:INFO] 扫描 update_cache 耗时: {duration}ms items={items_found}")
+                    log_performance(logger, f"扫描 update_cache", duration, items=items_found)
 
             if not self.is_cancelled:
                 total_duration = (time.time() - scan_start_time) * 1000
@@ -512,22 +587,6 @@ class SystemScanner(QObject):
                 )
         except Exception as e:
             self.error.emit(f'Error scanning Update Cache: {str(e)}')
-
-
-class BrowserScanner(QObject):
-    def _get_directory_size(path: str) -> int:
-        """Get directory size"""
-        try:
-            total = 0
-            for f in Path(path).glob('**/*'):
-                if f.is_file():
-                    try:
-                        total += f.stat().st_size
-                    except (OSError, PermissionError):
-                        pass
-            return total
-        except Exception:
-            return 0
 
 
 class BrowserScanner(QObject):

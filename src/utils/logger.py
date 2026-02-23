@@ -17,15 +17,22 @@ class ConsoleLogHandler(logging.Handler, QObject):
     同时将 ERROR/CRITICAL 级别日志传递到调试监控器
     """
 
+    # 禁用 shutdown 时的 flush，避免 QObject 被删除时的 RuntimeError
+    flushOnClose = False
+
     log_signal = pyqtSignal(str, str, str, str)  # level, logger_name, timestamp, message
 
     def __init__(self, parent=None):
         logging.Handler.__init__(self)
         QObject.__init__(self, parent)
         self.setFormatter(logging.Formatter('%(message)s'))
+        self._closed = False
 
     def emit(self, record):
         """发射日志记录作为信号，并捕获错误到调试监控器"""
+        if self._closed:
+            return
+
         try:
             msg = self.format(record)
             # 直接使用 record.created 生成时间戳
@@ -36,8 +43,19 @@ class ConsoleLogHandler(logging.Handler, QObject):
             if record.levelno >= logging.ERROR:
                 self._forward_to_debug_monitor(record, msg, timestamp)
 
-        except Exception:
+        except (RuntimeError, Exception):
+            # RuntimeObjectError - QObject 已被删除，或其他异常
             self.handleError(record)
+
+    def close(self):
+        """安全关闭处理器"""
+        self._closed = True
+        try:
+            # 先断开信号连接
+            self.log_signal.disconnect()
+        except (RuntimeError, Exception):
+            pass
+        super().close()
 
     def _forward_to_debug_monitor(self, record, msg: str, timestamp: str):
         """将错误日志转发到调试监控器"""

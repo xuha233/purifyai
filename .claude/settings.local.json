@@ -26,7 +26,10 @@
       "Bash(tee /tmp/test_results.txt)",
       "Bash(cd /g/docker/diskclean && python -m pytest tests/test_cleanup_history.py::test_history_record_creation -v --tb=line 2>&1 2>&1)",
       "Bash(cmd.exe:*)",
-      "Bash(cmd:*)"
+      "Bash(cmd:*)",
+      "Bash(::*)",
+      "Bash(cd /g/docker/diskclean && git checkout -- src/core/smart_cleaner.py 2>&1)",
+      "Bash(git add:*)"
     ]
   }
 }

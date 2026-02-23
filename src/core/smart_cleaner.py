@@ -24,6 +24,7 @@ Features:
 - 统计和报告
 """
 import os
+import sys
 import time
 from enum import Enum
 from typing import List, Dict, Optional, Callable
@@ -45,8 +46,190 @@ from .execution_engine import (
 )
 from .database import Database, get_database
 from utils.logger import get_logger
+from utils.debug_tracker import debug_event, debug_exception, track_signal, timing_context
 
 logger = get_logger(__name__)
+
+
+class ScannerAdapter(QThread):
+    """扫描器适配器 - 统一不同扫描器的接口"""
+
+    scan_progress = pyqtSignal(int, int)
+    item_found = pyqtSignal(object)
+    error = pyqtSignal(str)
+    complete = pyqtSignal(list)
+
+    def __init__(self, scanner):
+        super().__init__()
+        self.scanner = scanner
+        self._is_running = False
+        self._results = []
+        self.logger = logger
+        self._connect_scanner_signals()
+
+    def _connect_scanner_signals(self):
+        debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
+                   '连接扫描器信号',
+                   scanner_type=type(self.scanner).__name__)
+
+        if hasattr(self.scanner, 'item_found'):
+            self.scanner.item_found.connect(self.item_found.emit)
+            debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
+                       '已连接 item_found 信号')
+
+        if hasattr(self.scanner, 'complete'):
+            self.scanner.complete.connect(self._on_complete)
+            debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
+                       '已连接 complete 信号')
+
+        if hasattr(self.scanner, 'error'):
+            self.scanner.error.connect(self.error.emit)
+            debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
+                       '已连接 error 信号')
+
+        if hasattr(self.scanner, 'progress'):
+            self.scanner.progress.connect(self._translate_progress)
+            debug_event('DEBUG', 'ScannerAdapter', '_connect_scanner_signals',
+                       '已连接 progress 信号')
+
+    def _translate_progress(self, progress):
+        debug_event('DEBUG', 'ScannerAdapter', '_translate_progress',
+                   '接收进度信号',
+                   progress_type=type(progress).__name__,
+                   progress_value=str(progress)[:100])
+
+        if isinstance(progress, tuple) and len(progress) == 2:
+            self.scan_progress.emit(*progress)
+        elif isinstance(progress, str):
+            try:
+                if '(' in progress and ')' in progress:
+                    parts = progress.split('(')[1].split(')')[0].split('/')
+                    if len(parts) == 2:
+                        self.scan_progress.emit(int(parts[0]), int(parts[1]))
+            except Exception as e:
+                debug_event('WARNING', 'ScannerAdapter', '_translate_progress',
+                           '进度解析失败',
+                           error=str(e))
+
+    def _on_complete(self, results):
+        try:
+            if not hasattr(self, 'logger'):
+                from utils.logger import get_logger
+                self.logger = get_logger(__name__)
+
+            track_signal('complete', type(self.scanner).__name__, 'ScannerAdapter', emitted=False, received=True)
+
+            results_list = results if isinstance(results, list) else ([results] if results else [])
+            self._results = results_list
+            self._is_running = False
+
+            debug_event('INFO', 'ScannerAdapter', '_on_complete',
+                       '扫描完成，准备发送 complete 信号',
+                       results_count=len(results_list))
+
+            self.logger.info(f"[ScannerAdapter] 扫描完成: {len(self._results)} 项，准备发送 complete 信号")
+
+            self.complete.emit(self._results)
+            track_signal('complete', 'ScannerAdapter', 'ScanThread', emitted=True, received=False)
+
+            debug_event('INFO', 'ScannerAdapter', '_on_complete',
+                       'complete 信号已发送')
+
+            self.logger.info(f"[ScannerAdapter] complete 信号已发送")
+        except Exception as e:
+            debug_exception('ScannerAdapter', '_on_complete', '处理完成信号异常', exc_info=sys.exc_info())
+            self.error.emit(f'扫描完成处理异常: {str(e)}')
+            raise
+
+    def run(self):
+        pass
+
+    def start_scan(self):
+        try:
+            if not hasattr(self, 'logger'):
+                from utils.logger import get_logger
+                self.logger = get_logger(__name__)
+
+            scanner_type = type(self.scanner).__name__
+            debug_event('INFO', 'ScannerAdapter', 'start_scan',
+                       '开始扫描',
+                       scanner_type=scanner_type)
+
+            self._is_running = True
+            self.logger.info(f"[ScannerAdapter] start_scan 被调用, scanner类型: {scanner_type}")
+
+            if hasattr(self.scanner, 'start_scan'):
+                self.logger.debug("[ScannerAdapter] 调用 scanner.start_scan()")
+                debug_event('DEBUG', 'ScannerAdapter', 'start_scan',
+                           '调用 scanner.start_scan()')
+                self.scanner.start_scan()
+            elif hasattr(self.scanner, 'start') and callable(getattr(self.scanner, 'start')):
+                self.logger.debug("[ScannerAdapter] 调用 scanner.start()")
+                debug_event('DEBUG', 'ScannerAdapter', 'start_scan',
+                           '调用 scanner.start()')
+                self.scanner.start()
+            elif hasattr(self.scanner, 'scan') and callable(getattr(self.scanner, 'scan')):
+                self.logger.debug("[ScannerAdapter] 调用 scanner.scan()")
+                debug_event('DEBUG', 'ScannerAdapter', 'start_scan',
+                           '调用 scanner.scan()')
+                self.scanner.scan()
+            else:
+                self.logger.warning(f"[ScannerAdapter] scanner 没有 start 方法: {type(self.scanner)}")
+                debug_event('WARNING', 'ScannerAdapter', 'start_scan',
+                           'Scanner没有start方法',
+                           scanner_type=scanner_type)
+
+            self.logger.info(f"[ScannerAdapter] start_scan 完成, is_running={self._is_running}")
+        except Exception as e:
+            debug_exception('ScannerAdapter', 'start_scan', '启动扫描异常', exc_info=sys.exc_info())
+            self.error.emit(f'启动扫描失败: {str(e)}')
+            self._is_running = False
+
+    def cancel(self):
+        if hasattr(self.scanner, 'cancel'):
+            self.scanner.cancel()
+        elif hasattr(self.scanner, 'cancel_scan'):
+            self.scanner.cancel_scan()
+        self._is_running = False
+
+    @property
+    def is_running(self):
+        # 返回内部状态，而不是scanner的is_running
+        # 这样可以确保ScanThread能正确检测完成状态
+        debug_event('DEBUG', 'ScannerAdapter', 'is_running',
+                   '检查运行状态',
+                   running=self._is_running,
+                   scanner_running=getattr(self.scanner, 'is_running', 'N/A'))
+        return self._is_running
+
+    @property
+    def results(self):
+        # 优先返回内部结果，备用scanner的results
+        if self._results:
+            return self._results
+        return getattr(self.scanner, 'results', [])
+
+
+class AnalyzeThread(QThread):
+    """分析线程 - 在后台执行 AI 分析"""
+    progress = pyqtSignal(int, int)
+    completed = pyqtSignal(object)
+    error = pyqtSignal(str)
+
+    def __init__(self, ai_analyzer, items, config):
+        super().__init__()
+        self.ai_analyzer = ai_analyzer
+        self.items = items
+        self.config = config
+
+    def run(self):
+        try:
+            def progress_callback(current, total):
+                self.progress.emit(current, total)
+            plan = self.ai_analyzer.analyze_scan_results(self.items, progress_callback)
+            self.completed.emit(plan)
+        except Exception as e:
+            self.error.emit(f"分析失败: {str(e)}")
 
 
 class SmartCleanPhase(Enum):
@@ -108,12 +291,20 @@ class ScanThread(QThread):
         self.scan_target = scan_target
         self.is_cancelled = False
         self.mutex = QMutex()
+        self._temp_results = []  # 临时保存结果
 
         self.logger = logger
 
     def run(self):
         """执行扫描"""
+        start_time = time.time()
+
         try:
+            debug_event('INFO', 'ScanThread', 'run',
+                       '扫描线程启动',
+                       scan_type=self.scan_type,
+                       scan_target=self.scan_target)
+
             self.logger.info(f"[SMART_CLEAN] 开始扫描: {self.scan_type}, 目标: {self.scan_target}")
 
             items = []
@@ -127,49 +318,147 @@ class ScanThread(QThread):
             elif self.scan_type == ScanType.APPDATA.value:
                 scanner = AppDataScanner()
             elif self.scan_type == ScanType.CUSTOM.value:
-                scanner = CustomScanner(scan_target)
+                scanner = CustomScanner(self.scan_target)
             else:
-                self.error.emit(f"不支持的扫描类型: {self.scan_type}")
+                error_msg = f"不支持的扫描类型: {self.scan_type}"
+                debug_event('ERROR', 'ScanThread', 'run',
+                           f"不支持的扫描类型: {self.scan_type}")
+                self.error.emit(error_msg)
                 return
 
-            # 连接信号
-            self._connect_scanner_signals(scanner)
+            debug_event('INFO', 'ScanThread', 'run',
+                       '扫描器创建',
+                       scanner_type=type(scanner).__name__)
+
+            # 使用适配器包装扫描器
+            scanner_adapter = ScannerAdapter(scanner)
+            self.logger.debug(f"[SMART_CLEAN] ScannerAdapter created, connecting signals")
+            self._connect_scanner_signals(scanner_adapter)
+
+            self.logger.info(f"[SMART_CLEAN] 开始扫描, 适配器状态: is_running={scanner_adapter.is_running}")
 
             # 执行扫描
-            scanner.start()
+            scanner_adapter.start_scan()
 
             # 等待扫描完成（但保持响应取消）
-            while scanner.is_running and not self._is_cancelled():
-                self.msleep(100)
+            loop_count = 0
+            timeout_seconds = 300  # 5分钟超时
+            self.logger.info(f"[SMART_CLEAN] 等待扫描完成...")
 
-            self.msleep(100)  # 等待最后的信号
+            while scanner_adapter.is_running and not self._is_cancelled():
+                elapsed = time.time() - start_time
+
+                # 超时检测
+                if elapsed > timeout_seconds:
+                    error_msg = f"扫描超时（{timeout_seconds}秒），请检查系统状态或重试"
+                    self.logger.error(f"[SMART_CLEAN] {error_msg}")
+                    debug_event('ERROR', 'ScanThread', 'run',
+                               '扫描超时',
+                               elapsed_seconds=elapsed,
+                               timeout_seconds=timeout_seconds)
+                    scanner_adapter.cancel()
+                    self.error.emit(error_msg)
+                    return
+
+                # 每秒一次详细日志
+                if loop_count % 10 == 0:
+                    self.logger.debug(f"[SMART_CLEAN] 等待中... 循环: {loop_count}, adapter_running: {scanner_adapter.is_running}, 已等待: {elapsed:.1f}秒")
+
+                    # 每5秒输出一次调试事件
+                    if loop_count % 50 == 0:
+                        debug_event('DEBUG', 'ScanThread', 'run',
+                                   '扫描等待中',
+                                   elapsed_seconds=elapsed,
+                                   loop_count=loop_count,
+                                   adapter_is_running=scanner_adapter.is_running)
+
+                self.msleep(100)
+                loop_count += 1
+
+            elapsed = time.time() - start_time
+            self.logger.info(f"[SMART_CLEAN] 扫描循环结束: 迭行次数={loop_count}, is_cancelled={self._is_cancelled()}, adapter_is_running={scanner_adapter.is_running}, 耗时: {elapsed:.2f}秒")
+
+            debug_event('INFO', 'ScanThread', 'run',
+                       '扫描循环结束',
+                       loop_count=loop_count,
+                       is_cancelled=self._is_cancelled(),
+                       adapter_is_running=scanner_adapter.is_running,
+                       elapsed_seconds=elapsed)
+
+            self.msleep(200)  # 等待最后的信号
 
             if self._is_cancelled():
-                scanner.stop()
+                scanner_adapter.cancel()
                 self.logger.info("[SMART_CLEAN] 扫描已取消")
+                debug_event('INFO', 'ScanThread', 'run', '扫描已取消')
                 return
 
             # 获取扫描结果
-            if hasattr(scanner, 'results'):
-                items = scanner.results
+            items = scanner_adapter.results
+            self.logger.info(f"[SMART_CLEAN] 从适配器获取结果: {len(items)} 项")
+
+            debug_event('INFO', 'ScanThread', 'run',
+                       '获取扫描结果',
+                       results_count=len(items))
 
             self.completed.emit(items, self.scan_type)
-            self.logger.info(f"[SMART_CLEAN] 扫描完成: {len(items)} 项")
+            track_signal('completed', 'ScanThread', 'SmartCleaner', emitted=True, received=False)
+            self.logger.info(f"[SMART_CLEAN] 完成信号已发射, 类型={self.scan_type}")
 
         except Exception as e:
+            elapsed = time.time() - start_time
+            import traceback
+            tb_str = traceback.format_exc()
+
+            self.logger.error(f"[SMART_CLEAN] 扫描异常: {str(e)}\n{tb_str}")
+
+            debug_exception('ScanThread', 'run',
+                          '扫描异常',
+                          exc_info=sys.exc_info(),
+                          scan_type=self.scan_type,
+                            elapsed_seconds=elapsed)
+
             error_msg = f"扫描失败: {str(e)}"
-            self.logger.error(f"[SMART_CLEAN] {error_msg}")
             self.error.emit(error_msg)
 
     def _connect_scanner_signals(self, scanner):
         """连接扫描器信号"""
+        debug_event('DEBUG', 'ScanThread', '_connect_scanner_signals',
+                   '连接适配器信号',
+                   scanner_type=type(scanner).__name__)
+
+        # 连接 scan_progress - 注意类型匹配
         if hasattr(scanner, 'scan_progress'):
+            # ScannerAdapter 发送 (int, int)，直接传递
             scanner.scan_progress.connect(
-                lambda p: self.progress.emit("scanning", p.current, p.total)
+                lambda current, total: self.progress.emit("scanning", current, total)
             )
+            debug_event('DEBUG', 'ScanThread', '_connect_scanner_signals',
+                       '已连接 scan_progress 信号')
 
         if hasattr(scanner, 'item_found'):
             scanner.item_found.connect(self.item_found)
+            debug_event('DEBUG', 'ScanThread', '_connect_scanner_signals',
+                       '已连接 item_found 信号')
+
+        if hasattr(scanner, 'complete'):
+            track_signal('complete', 'ScannerAdapter', 'ScanThread._save_results')
+            scanner.complete.connect(self._save_results)
+            debug_event('DEBUG', 'ScanThread', '_connect_scanner_signals',
+                       '已连接 complete 信号')
+
+        if hasattr(scanner, 'error'):
+            track_signal('error', 'ScannerAdapter', 'ScanThread.error')
+            scanner.error.connect(self.error.emit)
+            debug_event('DEBUG', 'ScanThread', '_connect_scanner_signals',
+                       '已连接 error 信号')
+
+    def _save_results(self, results):
+        """保存扫描结果"""
+        debug_event('INFO', 'ScanThread', '_save_results',
+                   '接收扫描结果',
+                   results_count=len(results) if results else 0)
+        self._temp_results = results
 
     def cancel(self):
         """取消扫描"""
@@ -309,34 +598,39 @@ class SmartCleaner(QObject):
             items: 扫描项列表
             scan_type: 扫描类型
         """
+        debug_event('INFO', 'SmartCleaner', '_on_scan_completed',
+                   '接收扫描完成信号',
+                   scan_type=scan_type,
+                   items_count=len(items))
+
         self.scan_items = items
         self.logger.info(f"[SMART_CLEAN] 扫描完成: {len(items)} 项")
 
-        # 直接进入分析阶段
+        # 进入分析阶段
         self._set_phase(SmartCleanPhase.ANALYZING)
-        self._analyze_items(items, scan_type)
 
-    def _analyze_items(self, items: List[ScanItem], scan_type: str):
-        """分析扫描项
+        debug_event('INFO', 'SmartCleaner', '_on_scan_completed',
+                   '启动分析线程',
+                   items_count=len(items))
+
+        # 在新线程中分析
+        self.analyze_thread = AnalyzeThread(self.ai_analyzer, items, self.config)
+        self.analyze_thread.progress.connect(self.analyze_progress.emit)
+        self.analyze_thread.completed.connect(lambda plan: self._on_analyze_completed(plan, scan_type))
+        self.analyze_thread.error.connect(self.error.emit)
+        self.analyze_thread.start()
+
+    def _on_analyze_completed(self, plan: CleanupPlan, scan_type: str):
+        """分析完成回调
 
         Args:
-            items: 扫描项列表
+            plan: 清理计划
             scan_type: 扫描类型
         """
-        def progress_callback(current: int, total: int):
-            self.analyze_progress.emit(current, total)
-
-        # 生成清理计划
-        plan = self.ai_analyzer.analyze_scan_results(
-            items,
-            progress_callback=progress_callback
-        )
-
-        # 更新计划信息
-        plan.scan_type = scan_type
-        plan.scan_target = self.scan_thread.scan_target if self.scan_thread else ""
-
         self.current_plan = plan
+        self.current_plan.scan_type = scan_type
+        self.current_plan.scan_target = self.scan_thread.scan_target if self.scan_thread else ""
+
         self.logger.info(f"[SMART_CLEAN] 分析完成: Safe={plan.safe_count}, "
                         f"Suspicious={plan.suspicious_count}, "
                         f"Dangerous={plan.dangerous_count}")
