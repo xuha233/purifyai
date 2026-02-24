@@ -22,6 +22,7 @@ from ui.recovery_page import RecoveryPage
 from ui.developer_console import DeveloperConsolePage
 from ui.cleanup_report_page import CleanupReportPage
 from ui.agent_hub_page import AgentHubPage  # 智能体中心页面
+from ui.rule_editor_page import RuleEditorPage  # 规则编辑器页面（P3-2）
 
 from ui.system_tray import SystemTray
 from ui.windows_notification import WindowsNotification
@@ -116,6 +117,7 @@ class PurifyAIApp(QWidget):
         self.history_page = HistoryPage()
         self.settings_page = SettingsPage(self)  # 传入 self 以设置回调
         self.cleanup_report_page = CleanupReportPage()
+        self.rule_editor_page = RuleEditorPage()  # 规则编辑器页面（P3-2）
 
         self.stacked_widget.addWidget(self.dashboard_page)
         self.stacked_widget.addWidget(self.agent_hub_page)  # 智能体中心（新增）
@@ -127,6 +129,7 @@ class PurifyAIApp(QWidget):
         self.stacked_widget.addWidget(self.history_page)
         self.stacked_widget.addWidget(self.settings_page)
         self.stacked_widget.addWidget(self.cleanup_report_page)
+        self.stacked_widget.addWidget(self.rule_editor_page)  # 规则编辑器（P3-2）
 
         self.navigation.addItem(
             routeKey="dashboard",
@@ -169,6 +172,14 @@ class PurifyAIApp(QWidget):
             icon=FluentIcon.FOLDER,
             text="自定义清理",
             onClick=lambda: self.navigate_to("customCleaner", self.custom_cleaner_page)
+        )
+
+        # 规则编辑器（P3-2 新增，放在自定义清理之后）
+        self.navigation.addItem(
+            routeKey="ruleEditor",
+            icon=FluentIcon.EDIT,
+            text="规则编辑器",
+            onClick=lambda: self.navigate_to("ruleEditor", self.rule_editor_page)
         )
 
         self.navigation.addItem(
