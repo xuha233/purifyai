@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import (
     QStackedWidget,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QSize
+from PyQt5.QtGui import QIcon
 from PyQt5 import QtWidgets
 
 from qfluentwidgets import (
@@ -127,9 +128,7 @@ class OverviewTab(QWidget):
         self.one_click_btn = PrimaryPushButton()
         self.one_click_btn.setFixedHeight(56)
         self.one_click_btn.setMinimumWidth(240)
-        one_icon = IconWidget(FluentIcon.SEND)
-        one_icon.setFixedSize(24, 24)
-        self.one_click_btn.setIcon(one_icon)
+        self.one_click_btn.setIcon(QIcon(FluentIcon.SEND))
         self.one_click_btn.setText("一键清理")
         self.one_click_btn.clicked.connect(
             lambda: self.cleanup_requested.emit("one_click")
@@ -150,9 +149,7 @@ class OverviewTab(QWidget):
         self.incremental_btn = PushButton()
         self.incremental_btn.setFixedHeight(56)
         self.incremental_btn.setMinimumWidth(200)
-        incremental_icon = IconWidget(FluentIcon.ADD)
-        incremental_icon.setFixedSize(20, 20)
-        self.incremental_btn.setIcon(incremental_icon)
+        self.incremental_btn.setIcon(QIcon(FluentIcon.ADD))
         self.incremental_btn.setText("增量清理")
         self.incremental_btn.clicked.connect(
             lambda: self.cleanup_requested.emit("incremental")
