@@ -22,7 +22,7 @@ from agent import (
     get_orchestrator, AgentType, AIConfig,
     get_agent_integration, AgentIntegration
 )
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

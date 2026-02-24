@@ -9,7 +9,7 @@ import requests
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass, field
 
-from ..utils.logger import get_logger, log_api_event, log_performance
+from utils.logger import get_logger, log_api_event, log_performance
 
 
 logger_AI = get_logger(__name__)

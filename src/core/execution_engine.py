@@ -30,7 +30,7 @@ from .models_smart import (
 from .backup_manager import BackupManager, BackupStats
 from .database import Database, get_database
 from .rule_engine import RiskLevel
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

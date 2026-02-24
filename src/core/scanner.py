@@ -11,8 +11,8 @@ from PyQt5.QtCore import QSettings
 
 from .database import get_database
 from .rule_engine import RuleEngine, RiskLevel, get_rule_engine
-from ..utils.logger import get_logger, log_scan_event, log_file_operation, log_performance
-from ..utils.debug_tracker import debug_event, debug_exception, timing_context, get_debug_summary, get_performance_stats
+from utils.logger import get_logger, log_scan_event, log_file_operation, log_performance
+from utils.debug_tracker import debug_event, debug_exception, timing_context, get_debug_summary, get_performance_stats
 
 
 logger = get_logger(__name__)

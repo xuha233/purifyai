@@ -27,7 +27,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from .rule_engine import RiskLevel
 from .models_smart import CleanupItem, BackupInfo, BackupType, RecoveryRecord
 from .database import Database, get_database
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

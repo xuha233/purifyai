@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 import json
 import os
 
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

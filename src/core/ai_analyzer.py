@@ -34,7 +34,7 @@ from .rule_engine import RiskLevel, RuleEngine, Rule
 from .cost_controller import CostController, CostConfig, CostControlMode as CCCMode
 from .models import ScanItem
 from .models_smart import CleanupItem, CleanupPlan
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -15,7 +15,7 @@ from .scanner import SystemScanner, BrowserScanner, AppDataScanner
 from .depth_disk_scanner import DepthDiskScanner
 from .models import ScanItem
 from .rule_engine import RiskLevel
-from ..utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
