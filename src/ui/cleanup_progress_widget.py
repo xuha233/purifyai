@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QProgressBar,
     QFrame,
+    QDialog,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QThread, QTimer
 
@@ -39,6 +40,7 @@ from ..agent.cleanup_orchestrator import (
     CleanupReport,
 )
 from ..agent.smart_recommender import UserProfile, CleanupMode
+from ..ui.restore_dialog import RestoreDialog
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -364,6 +366,37 @@ class CleanupProgressWidget(SimpleCardWidget):
             )
             return
 
+        # 显示恢复对话框
+        try:
+            from ..core.restore_manager import RestoreManager
+            from ..core.restore_signal import RestoreSignal
+            from ..ui.restore_dialog import RestoreDialog, RestoreProgressDialog
+
+            # 创建恢复对话框
+            dialog = RestoreDialog(self)
+            result = dialog.exec_()
+
+            if result == QDialog.Accepted:
+                # 用户点击撤销并成功
+                self.undo_btn.setEnabled(False)
+                logger.info(f"[CleanupProgress] 撤销成功: {self.current_report.report_id}")
+
+        except ImportError as e:
+            # 如果 RestoreManager 不存在，回退到 BackupManager
+            logger.warning(f"[CleanupProgress] RestoreManager 不可用，使用 BackupManager: {e}")
+            self._on_undo_fallback()
+        except Exception as e:
+            InfoBar.error(
+                title="撤销失败",
+                content=str(e),
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+            )
+            logger.error(f"[CleanupProgress] 撤销失败: {e}")
+
+    def _on_undo_fallback(self):
+        """撤销清理（后备方法，使用 BackupManager）"""
         try:
             from ..core.backup_manager import BackupManager
 
