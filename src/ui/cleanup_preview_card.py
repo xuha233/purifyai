@@ -5,14 +5,18 @@
 显示智能推荐清理计划的预览信息
 """
 
+import os
 from PyQt5.QtWidgets import (
     QWidget,
+    QDialog,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
     QFrame,
+    QScrollArea,
+    QApplication,
 )
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QObject
 
 from qfluentwidgets import (
     SimpleCardWidget,
@@ -35,7 +39,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class CleanupPreviewCard(QtWidgets.QWidget):
+class CleanupPreviewCard(QWidget):
     """清理预览卡片
 
     显示智能推荐清理计划的预览
@@ -82,6 +86,21 @@ class CleanupPreviewCard(QtWidgets.QWidget):
                 }
             """)
             title_row.addWidget(recommended_badge)
+
+        # 增量清理徽章
+        if self.plan.is_incremental:
+            incremental_badge = QLabel("增量清理")
+            incremental_badge.setStyleSheet("""
+                QLabel {
+                    background: #F6FFED;
+                    color: #52C41A;
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
+            """)
+            title_row.addWidget(incremental_badge)
 
         main_layout.addLayout(title_row)
 
@@ -151,6 +170,16 @@ class CleanupPreviewCard(QtWidgets.QWidget):
             "#52C41A",
         )
         stats_layout.addWidget(low_risk_card)
+
+        # 增量清理新文件卡片
+        if self.plan.is_incremental:
+            new_files_card = self._create_stat_card(
+                IconWidget(FluentIcon.ADD),
+                "本次新增文件",
+                str(len(self.plan.items)),
+                "#722ED1",
+            )
+            stats_layout.addWidget(new_files_card)
 
         main_layout.addLayout(stats_layout)
 
@@ -233,7 +262,7 @@ class CleanupPreviewCard(QtWidgets.QWidget):
         pass
 
 
-class CleanupPreviewDialog(QtWidgets.QDialog):
+class CleanupPreviewDialog(QDialog):
     """清理预览对话框
 
     显示清理计划并提供确认选项
@@ -267,7 +296,7 @@ class CleanupPreviewDialog(QtWidgets.QDialog):
         main_layout.addWidget(description)
 
         # 预览卡片
-        scroll_area = QtWidgets.QScrollArea()
+        scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll_area.setStyleSheet("""

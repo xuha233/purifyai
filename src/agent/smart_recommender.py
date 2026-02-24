@@ -518,3 +518,69 @@ class SmartRecommender:
                 json.dump({'files': files}, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"[SmartRecommender] 保存清理文件列表失败: {e}")
+
+    def recommend_with_strategy(self, scan_results: List[ScanItem],
+                               strategy: Optional[CleanupStrategy] = None) -> Tuple[CleanupPlan, CleanupStrategy]:
+        """使用指定策略进行推荐
+
+        Args:
+            scan_results: 扫描结果列表
+            strategy: 清理策略（可选，如果为 None 则自动推荐）
+
+        Returns:
+            (CleanupPlan, CleanupStrategy) - 清理计划和使用的策略
+        """
+        # 如果没有指定策略，则使用默认平衡策略
+        if strategy is None:
+            from .cleanup_strategy_manager import CleanupStrategyManager
+            strategy_manager = CleanupStrategyManager()
+            strategy = strategy_manager.recommend_based_on_scenario(UserScenario.NORMAL)
+
+        # 应用策略规则生成清理计划
+        plan = self._apply_strategy_rules(scan_results, strategy)
+
+        return plan, strategy
+
+    def _apply_strategy_rules(self, scan_results: List[ScanItem],
+                             strategy: CleanupStrategy) -> CleanupPlan:
+        """应用策略规则生成清理计划
+
+        Args:
+            scan_results: 扫描结果列表
+            strategy: 清理策略
+
+        Returns:
+            清理计划
+        """
+        plan = self.recommend(self.profile_cache, strategy.mode)
+
+        # 应用风险阈值过滤
+        if strategy.risk_threshold:
+            filtered_items = [
+                item for item in plan.items
+                if item.risk_value <= strategy.risk_threshold
+            ]
+            plan.items = filtered_items
+
+        # 应用优先类别排序
+        if strategy.priority_categories:
+            def get_priority(item):
+                category = getattr(item, 'category', 'other')
+                if category in strategy.priority_categories:
+                    return strategy.priority_categories.index(category)
+                return len(strategy.priority_categories)
+
+            plan.items.sort(key=get_priority)
+
+        # 应用大小优先
+        if strategy.prioritize_size:
+            plan.items.sort(key=lambda item: item.size, reverse=True)
+
+        # 应用时间优先
+        if strategy.prioritize_recency:
+            plan.items.sort(key=lambda item: item.last_modified, reverse=True)
+
+        # 重新计算统计
+        plan.calculate_stats()
+
+        return plan

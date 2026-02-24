@@ -1,0 +1,71 @@
+{
+  "presets": {
+    "gamer": {
+      "strategy_id": "gamer_preferred",
+      "name": "游戏玩家优化",
+      "description": "为游戏玩家优化的清理策略，优先清理游戏缓存、临时文件和下载文件夹，采用激进模式以释放更多磁盘空间。",
+      "mode": "aggressive",
+      "risk_threshold": 50,
+      "priority_categories": [
+        "game_cache",
+        "temp_files",
+        "downloads"
+      ],
+      "schedule": "weekly",
+      "preferred_time": "20:00",
+      "prioritize_size": true,
+      "prioritize_recency": false,
+      "is_preset": true
+    },
+    "office": {
+      "strategy_id": "office_standard",
+      "name": "办公电脑标准",
+      "description": "适合办公环境的标准清理策略，优先清理浏览器缓存、临时文件和日志，采用平衡模式确保系统稳定性。",
+      "mode": "balanced",
+      "risk_threshold": 30,
+      "priority_categories": [
+        "browser_cache",
+        "temp_files",
+        "logs"
+      ],
+      "schedule": "daily",
+      "preferred_time": "18:00",
+      "prioritize_size": false,
+      "prioritize_recency": false,
+      "is_preset": true
+    },
+    "developer": {
+      "strategy_id": "dev_conservative",
+      "name": "开发者保守",
+      "description": "保护开发文件的保守清理策略，只清理构建缓存、临时文件和日志，采用手动调度以确保开发者数据安全。",
+      "mode": "conservative",
+      "risk_threshold": 20,
+      "priority_categories": [
+        "build_cache",
+        "temp_files",
+        "logs"
+      ],
+      "schedule": "manual",
+      "preferred_time": null,
+      "prioritize_size": false,
+      "prioritize_recency": false,
+      "is_preset": true
+    },
+    "normal": {
+      "strategy_id": "normal_balanced",
+      "name": "普通用户平衡",
+      "description": "适合普通用户的平衡清理策略，清理浏览器缓存和临时文件，采用周度调度。",
+      "mode": "balanced",
+      "risk_threshold": 30,
+      "priority_categories": [
+        "browser_cache",
+        "temp_files"
+      ],
+      "schedule": "weekly",
+      "preferred_time": "21:00",
+      "prioritize_size": false,
+      "prioritize_recency": false,
+      "is_preset": true
+    }
+  }
+}

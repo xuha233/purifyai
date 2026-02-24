@@ -70,6 +70,7 @@ class CleanupReport:
     success_rate: float = 0.0
     details: List[Dict[str, Any]] = field(default_factory=list)
     phase: CleanupPhase = CleanupPhase.SCANNING
+    is_incremental: bool = False  # 是否为增量清理
 
     def calculate_stats(self):
         """计算统计数据"""
@@ -201,6 +202,7 @@ class CleanupOrchestrator:
             self._update_phase(CleanupPhase.SCANNING, 10, "正在扫描系统...")
             plan = self.generate_cleanup_plan(mode)
             report.plan_id = plan.plan_id
+            report.is_incremental = plan.is_incremental
 
             self._update_phase(CleanupPhase.ANALYZING, 20, "正在分析文件风险...")
             # 计划已在 recommend 中生成
