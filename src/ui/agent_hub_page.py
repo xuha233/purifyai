@@ -367,6 +367,11 @@ class AgentHubPage(QWidget):
         ai_review_btn.setFixedHeight(36)
         header_layout.addWidget(ai_review_btn)
 
+        self.incremental_cleanup_btn = PushButton(FluentIcon.ADD, "增量清理")
+        self.incremental_cleanup_btn.clicked.connect(self._on_incremental_cleanup)
+        self.incremental_cleanup_btn.setFixedHeight(36)
+        header_layout.addWidget(self.incremental_cleanup_btn)
+
         self.one_click_cleanup_btn = PrimaryPushButton(FluentIcon.SEND, "一键清理")
         self.one_click_cleanup_btn.clicked.connect(self._on_one_click_cleanup)
         self.one_click_cleanup_btn.setFixedHeight(36)
@@ -779,6 +784,124 @@ class AgentHubPage(QWidget):
         self.one_click_cleanup_btn.setEnabled(True)
 
         logger.error(f"[AgentHub] 一键清理失败: {error_message}")
+
+    def _on_incremental_cleanup(self):
+        """增量清理操作"""
+        InfoBar.info(
+            title="增量清理",
+            content="正在扫描上次清理后的新增文件...",
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=2000,
+        )
+
+        try:
+            from ..agent.smart_recommender import SmartRecommender, CleanupMode
+
+            # 构建用户画像
+            recommender = SmartRecommender()
+            if self.user_profile is None:
+                self.user_profile = recommender.build_user_profile()
+
+            # 生成增量清理计划
+            self.cleanup_plan = recommender.recommend_incremental(mode=CleanupMode.BALANCED.value)
+
+            # 检查是否有增量文件
+            if not self.cleanup_plan.items:
+                InfoBar.info(
+                    title="无新增文件",
+                    content="上次清理后没有发现新的可清理文件",
+                    parent=self,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                )
+                return
+
+            # 显示预览对话框
+            preview_dialog = CleanupPreviewDialog(self.cleanup_plan, self)
+            if (
+                preview_dialog.exec_() == QtWidgets.QDialog.Accepted
+                and preview_dialog.is_confirmed()
+            ):
+                # 用户确认，开始清理
+                self._start_incremental_cleanup()
+
+        except Exception as e:
+            logger.error(f"[AgentHub] 增量清理失败: {e}")
+            InfoBar.error(
+                title="增量清理失败",
+                content=str(e),
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+            )
+
+    def _start_incremental_cleanup(self):
+        """开始执行增量清理"""
+        if not self.cleanup_plan or not self.user_profile:
+            logger.error("[AgentHub] 清理计划或用户画像不存在")
+            return
+
+        # 显示清理进度组件
+        if self.cleanup_widget:
+            self.cleanup_widget.setVisible(True)
+            self.cleanup_widget.start_cleanup(self.user_profile, self.cleanup_plan.mode, self.cleanup_plan)
+
+            # 连接清理完成信号
+            if self.cleanup_widget.cleanup_thread:
+                self.cleanup_widget.cleanup_thread.cleanup_completed.connect(
+                    self._on_incremental_cleanup_completed
+                )
+                self.cleanup_widget.cleanup_thread.cleanup_failed.connect(
+                    self._on_incremental_cleanup_failed
+                )
+
+        # 禁用增量清理按钮
+        self.incremental_cleanup_btn.setEnabled(False)
+
+        InfoBar.success(
+            title="开始增量清理",
+            content="智能清理已启动，请查看进度...",
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+        )
+
+        # 更新 pipeline 状态
+        self.pipeline.set_stage_status(AgentStage.CLEANUP, "running")
+
+    def _on_incremental_cleanup_completed(self, report):
+        """增量清理完成"""
+        InfoBar.success(
+            title="增量清理完成",
+            content=f"成功清理 {report.success_items} 个文件，释放 {self._format_size(report.freed_size)}",
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+        )
+
+        # 更新统计
+        self._update_stats({"files": report.success_items, "space": report.freed_size})
+
+        # 重新启用按钮
+        self.incremental_cleanup_btn.setEnabled(True)
+
+        logger.info(f"[AgentHub] 增量清理完成: {report.report_id}")
+
+    def _on_incremental_cleanup_failed(self, error_message):
+        """增量清理失败"""
+        InfoBar.error(
+            title="清理失败",
+            content=error_message,
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=5000,
+        )
+
+        # 重新启用按钮
+        self.incremental_cleanup_btn.setEnabled(True)
+
+        logger.error(f"[AgentHub] 增量清理失败: {error_message}")
 
     # ========== 公共方法 ==========
 

@@ -39,7 +39,7 @@ from ..agent.cleanup_orchestrator import (
     CleanupPhase,
     CleanupReport,
 )
-from ..agent.smart_recommender import UserProfile, CleanupMode
+from ..agent.smart_recommender import UserProfile, CleanupMode, CleanupPlan
 from ..ui.restore_dialog import RestoreDialog
 from utils.logger import get_logger
 
@@ -86,6 +86,7 @@ class CleanupProgressWidget(SimpleCardWidget):
         super().__init__(parent)
         self.cleanup_thread: Optional[CleanupThread] = None
         self.current_report: Optional[CleanupReport] = None
+        self.current_plan: Optional[CleanupPlan] = None  # 保存当前清理计划
         self._init_ui()
 
     def _init_ui(self):
@@ -202,14 +203,18 @@ class CleanupProgressWidget(SimpleCardWidget):
         main_layout.addWidget(self.backup_hint)
 
     def start_cleanup(
-        self, profile: UserProfile, mode: str = CleanupMode.BALANCED.value
+        self, profile: UserProfile, mode: str = CleanupMode.BALANCED.value, cleanup_plan: Optional[CleanupPlan] = None
     ):
         """开始清理
 
         Args:
             profile: 用户画像
             mode: 清理模式
+            cleanup_plan: 清理计划（可选，用于增量清理）
         """
+        # 保存清理计划（用于增量清理）
+        self.current_plan = cleanup_plan
+
         # 清除之前的状态
         self._reset_ui()
 
@@ -286,6 +291,10 @@ class CleanupProgressWidget(SimpleCardWidget):
             f"清理完成！释放空间: {self._format_size(report.freed_size)}"
         )
 
+        # 如果是增量清理，保存文件列表
+        if self.current_plan and self.current_plan.is_incremental:
+            self._save_incremental_files(report)
+
         # 检查是否可以撤销（30天内）
         if self._can_undo(report):
             self.undo_btn.setEnabled(True)
@@ -350,6 +359,41 @@ class CleanupProgressWidget(SimpleCardWidget):
 
         time_since_cleanup = datetime.now() - report.completed_at
         return time_since_cleanup.days < 30
+
+    def _save_incremental_files(self, report: CleanupReport):
+        """保存增量清理的文件列表
+
+        Args:
+            report: 清理报告
+        """
+        try:
+            # 从清理报告中提取清理成功的文件路径
+            cleaned_files = [
+                d.get('path') for d in report.details
+                if d.get('success', False) and d.get('path')
+            ]
+
+            if cleaned_files:
+                # 调用 SmartRecommender 保存文件列表
+                from ..agent.smart_recommender import SmartRecommender
+
+                recommender = SmartRecommender()
+                recommender.save_last_cleanup_files(cleaned_files)
+
+                logger.info(f"[CleanupProgress] 已保存 {len(cleaned_files)} 个增量清理文件到 last_cleanup_files.json")
+
+                # 用户提示（可选）
+                InfoBar.info(
+                    title="增量清理记录已保存",
+                    content=f"已记录 {len(cleaned_files)} 个清理文件用于下次增量清理",
+                    parent=self,
+                    position=InfoBarPosition.TOP,
+                    duration=2000,
+                )
+
+        except Exception as e:
+            # 保存失败不影响清理结果，只记录警告
+            logger.warning(f"[CleanupProgress] 保存增量清理文件列表失败: {e}")
 
     def _on_undo(self):
         """撤销清理"""
