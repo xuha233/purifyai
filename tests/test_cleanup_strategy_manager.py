@@ -8,15 +8,19 @@
 创建时间: 2026-02-24
 """
 
-import pytest
-from datetime import datetime
+from typing import List, Dict, Optional, TYPE_CHECKING
+from datetime import datetime, timedelta
 from src.agent.cleanup_strategy_manager import (
     CleanupStrategy,
     CleanupStrategyManager,
     UserScenario,
-    StrategyProfile
+    UserBehaviorProfile,
+    StrategyHistory
 )
-from src.agent.smart_recommender import CleanupReport
+from src.agent.cleanup_orchestrator import CleanupReport
+
+if TYPE_CHECKING:
+    from src.agent.cleanup_orchestrator import CleanupReport
 
 
 class TestCleanupStrategy:
@@ -146,7 +150,7 @@ class TestCleanupStrategyManager:
 
         profile = strategy_manager.generate_strategy_profile(behavior)
 
-        assert isinstance(profile, StrategyProfile)
+        assert isinstance(profile, UserBehaviorProfile)
         assert profile.frequency == "weekly"
         assert profile.timing_preference == "weekend"
 

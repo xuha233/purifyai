@@ -17,7 +17,6 @@ from enum import Enum
 from pathlib import Path
 
 from ..core.models import ScanItem
-from ..core.scanner import Scanner
 from ..data.health_history import HealthHistoryManager
 
 
@@ -178,7 +177,6 @@ class AIHealthScorer:
         Args:
             health_history_manager: 健康历史管理器（可选）
         """
-        self.scanner = Scanner()
         self.health_history_manager = health_history_manager
         self._health_history: Optional[List[HealthReport]] = None
 

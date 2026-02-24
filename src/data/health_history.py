@@ -11,11 +11,13 @@
 import os
 import json
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 from datetime import datetime
 from pathlib import Path
 
-from ..agent.ai_health_scorer import HealthReport
+# 避免循环导入
+if TYPE_CHECKING:
+    from ..agent.ai_health_scorer import HealthReport
 
 
 # ============================================================================

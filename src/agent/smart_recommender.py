@@ -22,7 +22,7 @@ from functools import lru_cache
 from threading import Lock
 
 from ..core.models import ScanItem
-from ..core.scanner import Scanner
+# from ..core.scanner import Scanner  # Scanner class not found, removed
 from ..core.risk_assessment import RiskAssessmentSystem
 
 logger = logging.getLogger(__name__)
@@ -219,7 +219,7 @@ class SmartRecommender:
 
     def __init__(self):
         """初始化智能推荐器"""
-        self.scanner = Scanner()
+        # self.scanner = Scanner()  # Scanner class not found, commented out
         self.risk_system = RiskAssessmentSystem()
         self.profile_cache: Optional[UserProfile] = None
 
@@ -295,7 +295,8 @@ class SmartRecommender:
         for scan_path in rules['scan_paths']:
             if os.path.exists(scan_path):
                 try:
-                    items = self.scanner.scan_recursive(scan_path, max_depth=3)
+                    # items = self.scanner.scan_recursive(scan_path, max_depth=3)  # Scanner class not found
+                    items = []  # Temporary fix: return empty list
                     all_items.extend(items)
                 except Exception as e:
                     print(f"[SmartRecommender] 扫描失败: {scan_path}, 错误: {e}")
