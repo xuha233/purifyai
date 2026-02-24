@@ -54,6 +54,7 @@ from ..core.cleanup_rule import (
     ConditionType,
     RuleOperator,
 )
+from .rule_edit_dialog import RuleEditDialog
 
 
 logger = logging.getLogger(__name__)
