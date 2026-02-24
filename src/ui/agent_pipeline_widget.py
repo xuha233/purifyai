@@ -88,7 +88,16 @@ class PipelineStageCard(QFrame):
         self.progress_bar.setValue(0)
         self.progress_bar.setFixedHeight(4)
         self.progress_bar.setTextVisible(False)
-        self._update_progress_style("#0078D4")
+        self.progress_bar.setStyleSheet(f"""
+            QProgressBar {{
+                background-color: #E5E5E5;
+                border-radius: 2px;
+            }}
+            QProgressBar::chunk {{
+                background-color: #0078D4;
+                border-radius: 2px;
+            }}
+        """)
         layout.addWidget(self.progress_bar)
 
         self.status_label = QLabel("等待")
