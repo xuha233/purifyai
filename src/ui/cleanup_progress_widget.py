@@ -60,11 +60,13 @@ class CleanupThread(QThread):
     cleanup_status = pyqtSignal(str, bool)
 
     def __init__(
-        self, orchestrator: CleanupOrchestrator, mode: str = CleanupMode.BALANCED.value
+        self, orchestrator: CleanupOrchestrator, mode: str = CleanupMode.BALANCED.value,
+        is_incremental: bool = False
     ):
         super().__init__()
         self.orchestrator = orchestrator
         self.mode = mode
+        self.is_incremental = is_incremental  # 是否为增量清理
 
     def run(self):
         """执行清理"""
@@ -99,14 +101,29 @@ class CleanupProgressWidget(SimpleCardWidget):
         title_row = QHBoxLayout()
         title_row.setContentsMargins(0, 0, 0, 0)
 
-        title_icon = IconWidget(FluentIcon.SYNC)
-        title_icon.setFixedSize(24, 24)
-        title_icon.setStyleSheet("color: #0078D4;")
-        title_row.addWidget(title_icon)
+        self.title_icon = IconWidget(FluentIcon.SYNC)
+        self.title_icon.setFixedSize(24, 24)
+        self.title_icon.setStyleSheet("color: #0078D4;")
+        title_row.addWidget(self.title_icon)
 
         self.title_label = SubtitleLabel("清理进度")
         self.title_label.setStyleSheet("font-size: 18px;")
         title_row.addWidget(self.title_label)
+
+        # 增量清理徽章（默认隐藏）
+        self.incremental_badge = BodyLabel("增量")
+        self.incremental_badge.setStyleSheet("""
+            QLabel {
+                background: #722ED1;
+                color: white;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+            }
+        """)
+        self.incremental_badge.setVisible(False)
+        title_row.addWidget(self.incremental_badge)
 
         title_row.addStretch()
 
@@ -122,6 +139,21 @@ class CleanupProgressWidget(SimpleCardWidget):
         title_row.addWidget(self.status_label)
 
         main_layout.addLayout(title_row)
+
+        # 增量清理提示栏（默认隐藏）
+        self.incremental_hint = QLabel("快速清理：仅清理新增垃圾文件")
+        self.incremental_hint.setStyleSheet("""
+            QLabel {
+                background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
+                color: #6D28D9;
+                padding: 10px 14px;
+                border-radius: 8px;
+                font-size: 12px;
+                border-left: 4px solid #722ED1;
+            }
+        """)
+        self.incremental_hint.setVisible(False)
+        main_layout.addWidget(self.incremental_hint)
 
         # 分隔线
         separator = QFrame()
@@ -181,6 +213,27 @@ class CleanupProgressWidget(SimpleCardWidget):
 
         main_layout.addLayout(stats_row)
 
+        # 增量清理统计（默认隐藏）
+        incremental_stats_row = QHBoxLayout()
+        incremental_stats_row.setSpacing(20)
+        self.new_files_label = BodyLabel("")
+        self.new_files_label.setStyleSheet("color: #722ED1; font-size: 12px;")
+        incremental_stats_row.addWidget(self.new_files_label)
+
+        self.skipped_files_label = BodyLabel("")
+        self.skipped_files_label.setStyleSheet("color: #8B5CF6; font-size: 12px;")
+        incremental_stats_row.addWidget(self.skipped_files_label)
+
+        self.speed_improvement_label = BodyLabel("")
+        self.speed_improvement_label.setStyleSheet("color: #A78BFA; font-size: 12px; font-weight: 600;")
+        incremental_stats_row.addWidget(self.speed_improvement_label)
+
+        incremental_stats_row.addStretch()
+        self.incremental_stats_widget = QWidget()
+        self.incremental_stats_widget.setLayout(incremental_stats_row)
+        self.incremental_stats_widget.setVisible(False)
+        main_layout.addWidget(self.incremental_stats_widget)
+
         # 撤销按钮
         self.undo_btn = PushButton("撤销清理")
         self.undo_btn.setFixedHeight(36)
@@ -203,7 +256,11 @@ class CleanupProgressWidget(SimpleCardWidget):
         main_layout.addWidget(self.backup_hint)
 
     def start_cleanup(
-        self, profile: UserProfile, mode: str = CleanupMode.BALANCED.value, cleanup_plan: Optional[CleanupPlan] = None
+        self,
+        profile: UserProfile,
+        mode: str = CleanupMode.BALANCED.value,
+        cleanup_plan: Optional[CleanupPlan] = None,
+        is_incremental: bool = False
     ):
         """开始清理
 
@@ -211,12 +268,18 @@ class CleanupProgressWidget(SimpleCardWidget):
             profile: 用户画像
             mode: 清理模式
             cleanup_plan: 清理计划（可选，用于增量清理）
+            is_incremental: 是否为增量清理
         """
         # 保存清理计划（用于增量清理）
         self.current_plan = cleanup_plan
+        self.is_incremental = is_incremental or (cleanup_plan and cleanup_plan.is_incremental)
 
         # 清除之前的状态
         self._reset_ui()
+
+        # 如果是增量清理，显示增量清理相关UI
+        if self.is_incremental:
+            self._show_incremental_ui()
 
         # 创建清理信号
         signal = CleanupSignal()
@@ -231,7 +294,7 @@ class CleanupProgressWidget(SimpleCardWidget):
         orchestrator = CleanupOrchestrator(profile, signal)
 
         # 创建并启动清理线程
-        self.cleanup_thread = CleanupThread(orchestrator, mode)
+        self.cleanup_thread = CleanupThread(orchestrator, mode, is_incremental)
         self.cleanup_thread.progress_updated.connect(self._on_progress_updated)
         self.cleanup_thread.phase_changed.connect(self._on_phase_changed)
         self.cleanup_thread.cleanup_completed.connect(self._on_cleanup_completed)
@@ -242,6 +305,14 @@ class CleanupProgressWidget(SimpleCardWidget):
         self.cleanup_thread.start()
 
         self._set_running_state()
+
+    def _show_incremental_ui(self):
+        """显示增量清理UI元素"""
+        self.incremental_badge.setVisible(True)
+        self.incremental_hint.setVisible(True)
+        self.incremental_stats_widget.setVisible(True)
+        self.title_label.setText("增量清理进度")
+        self.title_icon.setIcon(FluentIcon.FAST_FORWARD)
 
     def _reset_ui(self):
         """重置 UI"""

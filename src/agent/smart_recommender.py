@@ -11,15 +11,21 @@
 import os
 import uuid
 import json
+import logging
+import hashlib
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Callable, Set
+from typing import List, Dict, Optional, Callable, Set, Tuple
 from datetime import datetime, timedelta
 from pathlib import Path
 from enum import Enum
+from functools import lru_cache
+from threading import Lock
 
 from ..core.models import ScanItem
 from ..core.scanner import Scanner
 from ..core.risk_assessment import RiskAssessmentSystem
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -217,6 +223,12 @@ class SmartRecommender:
         self.risk_system = RiskAssessmentSystem()
         self.profile_cache: Optional[UserProfile] = None
 
+        # 性能优化：文件扫描缓存
+        self._scan_cache: Dict[str, Tuple[List[ScanItem], datetime]] = {}
+        self._cache_lock = Lock()
+        self._cache_ttl = timedelta(minutes=5)  # 缓存有效期5分钟
+        self._cache_enabled = True  # 是否启用缓存
+
     def build_user_profile(self) -> UserProfile:
         """构建用户画像
 
@@ -315,9 +327,14 @@ class SmartRecommender:
     def recommend_incremental(self, mode: str = CleanupMode.BALANCED.value) -> CleanupPlan:
         """增量推荐（只清理上次清理后新增的文件）
 
+        优化点：
+        1. 使用 set() 进行快速去重和查找（O(1) 查找复杂度）
+        2. 缓存基础扫描结果，避免重复扫描
+        3. 使用缓存过期机制
+
         步骤：
-        1. 扫描系统并生成基础清理计划
-        2. 加载上次清理的文件列表
+        1. 扫描系统并生成基础清理计划（使用缓存）
+        2. 加载上次清理的文件列表（使用 set 优化）
         3. 过滤出新增文件（在上次清理列表中不存在的文件）
         4. 生成清理计划
 
@@ -330,16 +347,23 @@ class SmartRecommender:
         - last_cleanup_files.json 不存在: 全部文件都是新文件
         - 某些文件已删除: 这些文件不在扫描结果中，不影响增量逻辑
         """
+        start_time = datetime.now()
+
         if self.profile_cache is None:
             self.profile_cache = self.build_user_profile()
 
-        # 获取基础清理计划（包含所有符合条件文件）
-        base_plan = self.recommend(self.profile_cache, mode)
+        # 获取基础清理计划（使用缓存优化）
+        logger.info("[SmartRecommender] 正在生成基础清理计划...")
+        base_plan = self._get_cached_cleanup_plan(mode)
 
         # 加载上次清理的文件列表，转换为 set 提高查找效率
+        # set() 提供了 O(1) 的查找复杂度，比 list 的 O(n) 快很多
+        logger.info("[SmartRecommender] 正在加载上次的清理文件列表...")
         last_cleanup_files = set(self.load_last_cleanup_files())
 
         # 过滤出新增文件（不在上次清理列表中的文件）
+        # 使用列表推导式 + set 查找优化性能
+        logger.info(f"[SmartRecommender] 开始过滤新增文件 (基础: {len(base_plan.items)}, 上次: {len(last_cleanup_files)})...")
         new_items = [item for item in base_plan.items if item.path not in last_cleanup_files]
 
         # 创建增量清理计划
@@ -353,7 +377,101 @@ class SmartRecommender:
         )
         incremental_plan.calculate_stats()
 
+        duration = (datetime.now() - start_time).total_seconds()
+        logger.info(
+            f"[SmartRecommender] 增量推荐完成: "
+            f"耗时 {duration:.2f}s, "
+            f"新增 {len(new_items)} 个文件 "
+            f"(总共 {len(base_plan.items)} 个)"
+        )
+
         return incremental_plan
+
+    def _get_cached_cleanup_plan(self, mode: str) -> CleanupPlan:
+        """获取缓存的清理计划（用于性能优化）
+
+        Args:
+            mode: 清理模式
+
+        Returns:
+            CleanupPlan: 清理计划
+        """
+        cache_key = f"{self.profile_cache.scenario}_{mode}"
+        current_time = datetime.now()
+
+        with self._cache_lock:
+            # 检查缓存是否有效
+            if self._cache_enabled and cache_key in self._scan_cache:
+                cached_items, cache_time = self._scan_cache[cache_key]
+                if current_time - cache_time < self._cache_ttl:
+                    logger.debug(f"[SmartRecommender] 使用缓存: {cache_key}")
+                    # 基于缓存生成新计划
+                    plan = CleanupPlan(
+                        plan_id=str(uuid.uuid4()),
+                        items=cached_items,
+                        mode=mode,
+                        recommended=True,
+                    )
+                    plan.calculate_stats()
+                    return plan
+
+        # 缓存未命中，执行完整扫描
+        logger.debug(f"[SmartRecommender] 缓存未命中，执行扫描: {cache_key}")
+        plan = self.recommend(self.profile_cache, mode)
+
+        # 更新缓存
+        with self._cache_lock:
+            self._scan_cache[cache_key] = (plan.items, current_time)
+
+            # 定期清理过期缓存
+            if len(self._scan_cache) > 10:
+                self._clean_expired_cache()
+
+        return plan
+
+    def _clean_expired_cache(self, max_cache_size: int = 10):
+        """清理过期缓存
+
+        Args:
+            max_cache_size: 最大缓存大小
+        """
+        current_time = datetime.now()
+        expired_keys = [
+            key for key, (_, cache_time) in self._scan_cache.items()
+            if current_time - cache_time > self._cache_ttl
+        ]
+
+        for key in expired_keys:
+            del self._scan_cache[key]
+
+        # 如果仍然超过最大大小，删除最旧的条目
+        if len(self._scan_cache) > max_cache_size:
+            # 按缓存时间排序
+            sorted_keys = sorted(
+                self._scan_cache.keys(),
+                key=lambda k: self._scan_cache[k][1]
+            )
+            # 删除最旧的
+            for key in sorted_keys[:len(self._scan_cache) - max_cache_size]:
+                del self._scan_cache[key]
+
+        if expired_keys:
+            logger.debug(f"[SmartRecommender] 清理了 {len(expired_keys)} 个过期缓存")
+
+    def clear_cache(self):
+        """清除所有扫描缓存"""
+        with self._cache_lock:
+            self._scan_cache.clear()
+        logger.debug("[SmartRecommender] 所有缓存已清除")
+
+    def enable_cache(self, enabled: bool = True):
+        """启用或禁用缓存
+
+        Args:
+            enabled: 是否启用缓存
+        """
+        self._cache_enabled = enabled
+        logger.info(f"[SmartRecommender] 缓存已{'启用' if enabled else '禁用'}")
 
     def filter_by_profile(self, items: List[ScanItem], profile: str) -> List[ScanItem]:
         """根据用户场景过滤文件"""

@@ -10,12 +10,14 @@
 
 import uuid
 import json
+import logging
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Set
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 import time
+import os
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
@@ -23,6 +25,8 @@ from .smart_recommender import SmartRecommender, UserProfile, CleanupPlan, Clean
 from ..core.models import ScanItem
 from ..core.backup_manager import BackupManager
 from ..core.cleaner import Cleaner
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -71,6 +75,12 @@ class CleanupReport:
     details: List[Dict[str, Any]] = field(default_factory=list)
     phase: CleanupPhase = CleanupPhase.SCANNING
     is_incremental: bool = False  # 是否为增量清理
+
+    # 增量清理统计
+    new_files_count: int = 0  # 新增文件数
+    skipped_files_count: int = 0  # 跳过文件数（上次已清理）
+    last_cleanup_time: Optional[datetime] = None  # 上次清理时间
+    speed_improvement: float = 0.0  # 速度提升百分比
 
     def calculate_stats(self):
         """计算统计数据"""
@@ -178,6 +188,157 @@ class CleanupOrchestrator:
         self.backup_manager = BackupManager()
         self.cleaner = Cleaner()
         self.signal = signal
+        self._incremental_stats = None  # 缓存增量统计信息
+
+    def execute_incremental_cleanup(self, mode: str = CleanupMode.BALANCED.value) -> CleanupReport:
+        """执行增量清理
+
+        只清理上次清理后新增的可清理文件，提高清理效率。
+
+        步骤：
+        1. 使用推荐器获取增量清理计划
+        2. 获取上次清理的文件列表
+        3. 计算新增/跳过文件统计
+        4. 显示预览
+        5. 自动备份
+        6. 执行清理
+        7. 生成报告
+        8. 清理后自动保存文件列表
+
+        Args:
+            mode: 清理模式（默认为平衡模式）
+
+        Returns:
+            CleanupReport: 清理报告，包含增量清理统计信息
+        """
+        report_id = str(uuid.uuid4())
+        start_time = datetime.now()
+
+        report = CleanupReport(
+            report_id=report_id,
+            plan_id="",
+            started_at=start_time,
+            phase=CleanupPhase.SCANNING,
+            is_incremental=True
+        )
+
+        try:
+            logger.info(f"[CleanupOrchestrator] 开始增量清理 (report_id: {report_id})")
+
+            # 阶段 1：扫描和分析（增量模式）
+            self._update_phase(CleanupPhase.SCANNING, 10, "正在扫描新增垃圾文件...")
+            plan = self.recommender.recommend_incremental(mode)
+            report.plan_id = plan.plan_id
+
+            # 获取上次清理的文件和信息
+            last_cleanup_files = set(self.recommender.load_last_cleanup_files())
+            last_cleanup_time = self._get_last_cleanup_time()
+
+            # 计算统计信息
+            new_files_count = len(plan.items)
+            total_cleanable = new_files_count + len(last_cleanup_files)
+            skipped_files_count = len(last_cleanup_files)
+
+            report.new_files_count = new_files_count
+            report.skipped_files_count = skipped_files_count
+            report.last_cleanup_time = last_cleanup_time
+
+            logger.info(
+                f"[IncrementalCleanup] 新增文件: {new_files_count}, "
+                f"跳过文件: {skipped_files_count}, "
+                f"总可清理: {total_cleanable}"
+            )
+
+            self._update_phase(CleanupPhase.ANALYZING, 20, f"分析完成: 新增 {new_files_count} 个文件...")
+
+            # 阶段 2：备份（只备份新增文件）
+            if len(plan.items) > 0:
+                self._update_phase(CleanupPhase.BACKING_UP, 30, f"正在备份 {new_files_count} 个新文件...")
+                backup_info = self.backup_before_cleanup(plan.items)
+                report.details.append({
+                    'type': 'backup',
+                    'backup_id': backup_info.backup_id,
+                    'items_count': backup_info.items_count,
+                    'total_size': backup_info.total_size
+                })
+            else:
+                logger.info("[IncrementalCleanup] 没有新增文件需要清理")
+                report.phase = CleanupPhase.COMPLETED
+                report.completed_at = datetime.now()
+                report.calculate_stats()
+                return report
+
+            # 阶段 3：执行清理
+            self._update_phase(CleanupPhase.CLEANING, 50, f"正在清理 {new_files_count} 个新文件...")
+            report = self.execute_cleanup(plan, backup_info.backup_id)
+
+            # 阶段 4：生成报告和保存增量信息
+            self._update_phase(CleanupPhase.COMPLETED, 90, "正在保存增量记录...")
+
+            # 保存清理的文件列表
+            cleaned_files = [
+                d.get('path') for d in report.details
+                if d.get('success', False) and d.get('path')
+            ]
+
+            if cleaned_files:
+                self.recommender.save_last_cleanup_files(cleaned_files)
+                logger.info(f"[IncrementalCleanup] 已保存 {len(cleaned_files)} 个文件到增量记录")
+
+            # 计算速度提升（基于文件数量减少）
+            if total_cleanable > 0:
+                report.speed_improvement = (skipped_files_count / total_cleanable) * 100
+                logger.info(
+                    f"[IncrementalCleanup] 速度提升: {report.speed_improvement:.1f}% "
+                    f"(跳过 {skipped_files_count}/{total_cleanable} 个文件)"
+                )
+
+            # 阶段 5：完成
+            self._update_phase(CleanupPhase.COMPLETED, 100, "增量清理完成！")
+            report.phase = CleanupPhase.COMPLETED
+            report.calculate_stats()
+            report.completed_at = datetime.now()
+
+            # 保存清理历史（包含增量信息）
+            self._save_cleanup_history(report)
+
+            logger.info(
+                f"[CleanupOrchestrator] 增量清理完成: "
+                f"{report.success_items} 个成功, "
+                f"释放 {self._format_size(report.freed_size)}"
+            )
+
+            return report
+
+        except Exception as e:
+            report.phase = CleanupPhase.FAILED
+            report.details.append({
+                'type': 'error',
+                'error': str(e)
+            })
+
+            logger.error(f"[CleanupOrchestrator] 增量清理失败: {e}", exc_info=True)
+
+            if self.signal:
+                self.signal.cleanup_failed.emit(str(e))
+
+            raise e
+
+    def _get_last_cleanup_time(self) -> Optional[datetime]:
+        """获取最后一次清理时间（用于增量清理）"""
+        history_file = os.path.join(os.path.expanduser('~'), '.purifyai', 'cleanup_history.json')
+
+        if os.path.exists(history_file):
+            try:
+                with open(history_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    last_time = data.get('last_cleanup')
+                    if last_time:
+                        return datetime.fromisoformat(last_time)
+            except Exception as e:
+                logger.warning(f"[CleanupOrchestrator] 获取上次清理时间失败: {e}")
+
+        return None
 
     def execute_one_click_cleanup(self, mode: str = CleanupMode.BALANCED.value) -> CleanupReport:
         """执行一键清理
@@ -389,7 +550,17 @@ class CleanupOrchestrator:
             if 'history' not in data:
                 data['history'] = []
 
-            data['history'].append(report.to_dict())
+            # 转换为字典，包含增量清理统计
+            report_dict = report.to_dict()
+            if report.is_incremental:
+                report_dict.update({
+                    'new_files_count': report.new_files_count,
+                    'skipped_files_count': report.skipped_files_count,
+                    'last_cleanup_time': report.last_cleanup_time.isoformat() if report.last_cleanup_time else None,
+                    'speed_improvement': report.speed_improvement
+                })
+
+            data['history'].append(report_dict)
             data['last_cleanup'] = datetime.now().isoformat()
 
             # 只保留最近 100 条记录
@@ -399,8 +570,42 @@ class CleanupOrchestrator:
             with open(history_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
+            # 记录增量清理历史到日志
+            if report.is_incremental:
+                self._log_incremental_cleanup_history(report)
+
         except Exception as e:
-            print(f"[CleanupOrchestrator] 保存历史失败: {e}")
+            logger.error(f"[CleanupOrchestrator] 保存历史失败: {e}", exc_info=True)
+
+    def _log_incremental_cleanup_history(self, report: CleanupReport):
+        """记录增量清理到专用日志"""
+        try:
+            incremental_log_file = os.path.join(
+                os.path.expanduser('~'), '.purifyai', 'incremental_cleanup.log'
+            )
+
+            log_dir = os.path.dirname(incremental_log_file)
+            os.makedirs(log_dir, exist_ok=True)
+
+            with open(incremental_log_file, 'a', encoding='utf-8') as f:
+                timestamp = datetime.now().isoformat()
+                log_entry = (
+                    f"[{timestamp}] Report ID: {report.report_id}\n"
+                    f"  - 新增文件: {report.new_files_count}\n"
+                    f"  - 跳过文件: {report.skipped_files_count}\n"
+                    f"  - 成功清理: {report.success_items}\n"
+                    f"  - 释放空间: {self._format_size(report.freed_size)}\n"
+                    f"  - 速度提升: {report.speed_improvement:.1f}%\n"
+                    f"  - 耗时: {report.duration_seconds:.2f} 秒\n"
+                    f"  - 上次清理: {report.last_cleanup_time or '未知'}\n"
+                    f"{'=' * 60}\n"
+                )
+                f.write(log_entry)
+
+            logger.info(f"[CleanupOrchestrator] 增量清理历史已记录到 {incremental_log_file}")
+
+        except Exception as e:
+            logger.warning(f"[CleanupOrchestrator] 记录增量清理历史失败: {e}")
 
 
 # 导入 os 模块
