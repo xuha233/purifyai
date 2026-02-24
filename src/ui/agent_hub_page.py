@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QSpinBox,
     QCheckBox,
+    QStackedWidget,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QSize
 from PyQt5 import QtWidgets
@@ -201,7 +202,7 @@ class OverviewTab(QWidget):
 
         # 系统健康评分
         self.system_health = AgentStatCard(
-            "85/100", "健康评分", FluentIcon.HEALTH, "#52C41A"
+            "85/100", "健康评分", FluentIcon.HEART, "#52C41A"
         )
         grid_layout.addWidget(self.system_health, 1, 0)
 
@@ -777,7 +778,8 @@ class AgentHubPage(QWidget):
         # 创建选项卡容器
         self.main_tab = SegmentedWidget()
         self.main_tab.setFixedHeight(40)
-        self.main_tab.setCheckable(False)
+        # SegmentedWidget 没有 setCheckable 方法，移除此行
+        # self.main_tab.setCheckable(False)
         self.main_tab.addItem(
             routeKey="overview",
             onClick=lambda: self.stacked_widget.setCurrentIndex(0),
@@ -788,7 +790,7 @@ class AgentHubPage(QWidget):
             routeKey="cleanup",
             onClick=lambda: self.stacked_widget.setCurrentIndex(1),
             text="清理",
-            icon=FluentIcon.CLEAR,
+            icon=FluentIcon.DELETE,
         )
         self.main_tab.addItem(
             routeKey="agents",
