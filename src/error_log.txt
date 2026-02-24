@@ -88,3 +88,89 @@ Traceback (most recent call last):
     ^^^^^^^^^^^^^^^^^
 AttributeError: type object 'RiskLevel' has no attribute 'UNKNOWN'
 
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 56, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 111, in init_navigation
+    self.agent_hub_page = AgentHubPage()  # 智能体中心页面（新增）
+                          ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 763, in __init__
+    self._init_ui()
+    ~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 780, in _init_ui
+    self.main_tab.setCheckable(False)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SegmentedWidget' object has no attribute 'setCheckable'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 56, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 111, in init_navigation
+    self.agent_hub_page = AgentHubPage()  # 智能体中心页面（新增）
+                          ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 763, in __init__
+    self._init_ui()
+    ~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 792, in _init_ui
+    icon=FluentIcon.CLEAR,
+         ^^^^^^^^^^^^^^^^
+AttributeError: type object 'FluentIcon' has no attribute 'CLEAR'. Did you mean: 'LEAF'?
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 56, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 111, in init_navigation
+    self.agent_hub_page = AgentHubPage()  # 智能体中心页面（新增）
+                          ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 763, in __init__
+    self._init_ui()
+    ~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 819, in _init_ui
+    self.stacked_widget = QStackedWidget()
+                          ^^^^^^^^^^^^^^
+NameError: name 'QStackedWidget' is not defined
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\main.py", line 64, in <module>
+    main()
+    ~~~~^^
+  File "G:\docker\diskclean\src\main.py", line 50, in main
+    window = PurifyAIApp(app)
+  File "G:\docker\diskclean\src\app.py", line 56, in __init__
+    self.init_navigation()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\app.py", line 111, in init_navigation
+    self.agent_hub_page = AgentHubPage()  # 智能体中心页面（新增）
+                          ~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 764, in __init__
+    self._init_ui()
+    ~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 823, in _init_ui
+    self.overview_tab = OverviewTab()
+                        ~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 85, in __init__
+    self._init_ui()
+    ~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 205, in _init_ui
+    "85/100", "健康评分", FluentIcon.HEALTH, "#52C41A"
+                          ^^^^^^^^^^^^^^^^^
+AttributeError: type object 'FluentIcon' has no attribute 'HEALTH'. Did you mean: 'HEART'?
+
