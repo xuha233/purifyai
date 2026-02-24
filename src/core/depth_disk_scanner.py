@@ -24,8 +24,8 @@ from .scanner import ScanRiskAssessor
 from .models import ScanItem
 from .rule_engine import RiskLevel, get_rule_engine
 from .whitelist import get_whitelist
-from utils.logger import get_logger
-from utils.logger import log_scan_event, log_performance
+from ..utils.logger import get_logger
+from ..utils.logger import log_scan_event, log_performance
 
 logger = get_logger(__name__)
 

@@ -8,7 +8,7 @@ import threading
 import time
 from typing import List, Dict, Any
 from PyQt5.QtCore import QObject, pyqtSignal
-from utils.debug_monitor import get_debug_monitor
+from ..utils.debug_monitor import get_debug_monitor
 import send2trash
 
 from .database import get_database
@@ -21,7 +21,7 @@ from .safety.custom_recycle_bin import (
     is_custom_recycle_enabled,
     get_custom_recycle_path
 )
-from utils.logger import get_logger, log_clean_event, log_file_operation, log_performance
+from ..utils.logger import get_logger, log_clean_event, log_file_operation, log_performance
 
 
 logger = get_logger(__name__)

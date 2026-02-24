@@ -13,13 +13,13 @@ import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from src.core.cleanup_rule import (
+from core.cleanup_rule import (
     CleanupRule, RuleCondition, FileInfo, ActionResult,
     RuleType, ConditionType, RuleOperator, RuleAction,
     convert_size_to_bytes, convert_bytes_to_size
 )
-from src.core.rule_engine import RuleEngine, create_simple_rule
-from src.core.rule_manager import RuleManager, get_common_rules, get_scenario_rules
+from core.rule_engine import RuleEngine, create_simple_rule
+from core.rule_manager import RuleManager, get_common_rules, get_scenario_rules
 
 
 # ============================================================================

@@ -22,7 +22,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from .backup_manager import BackupManager, BackupInfo, BackupType
 from .models_smart import CleanupItem, RecoveryRecord
 from .restore_signal import RestoreSignal
-from utils.logger import get_logger
+from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 

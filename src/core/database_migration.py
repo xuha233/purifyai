@@ -20,7 +20,7 @@ import os
 import hashlib
 from typing import Optional
 from datetime import datetime
-from utils.logger import get_logger
+from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 

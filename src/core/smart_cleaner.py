@@ -48,8 +48,8 @@ from .execution_engine import (
     SmartCleanupExecutor, ExecutionConfig, get_executor
 )
 from .database import Database, get_database
-from utils.logger import get_logger
-from utils.debug_tracker import debug_event, debug_exception, track_signal, timing_context
+from ..utils.logger import get_logger
+from ..utils.debug_tracker import debug_event, debug_exception, track_signal, timing_context
 
 logger = get_logger(__name__)
 
@@ -120,7 +120,7 @@ class ScannerAdapter(QThread):
             self.logger.info(f"[ScannerAdapter] _on_complete 被调用! 结果数量: {len(results) if results else 0}")
 
             if not hasattr(self, 'logger'):
-                from utils.logger import get_logger
+                from ..utils.logger import get_logger
                 self.logger = get_logger(__name__)
 
             track_signal('complete', type(self.scanner).__name__, 'ScannerAdapter', emitted=False, received=True)
@@ -148,7 +148,7 @@ class ScannerAdapter(QThread):
     def start_scan(self):
         try:
             if not hasattr(self, 'logger'):
-                from utils.logger import get_logger
+                from ..utils.logger import get_logger
                 self.logger = get_logger(__name__)
 
             scanner_type = type(self.scanner).__name__

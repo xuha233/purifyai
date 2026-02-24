@@ -22,7 +22,7 @@ from .models_smart import (
     CleanupPlan, ExecutionResult, FailureInfo, RecoveryRecord,
     CleanupItem, RiskLevel, BackupType
 )
-from utils.logger import get_logger
+from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 

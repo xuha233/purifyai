@@ -5,7 +5,7 @@ import hashlib
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 import json
-from utils.logger import get_logger
+from ..utils.logger import get_logger
 
 
 class Database:
