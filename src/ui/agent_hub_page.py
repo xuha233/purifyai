@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QStackedWidget,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
+from PyQt5 import QtWidgets
 
 from qfluentwidgets import (
     StrongBodyLabel,
@@ -35,6 +36,8 @@ from .agent_status_widgets import AgentStatusFrame, AgentStatsWidget
 from .agent_pipeline_widget import AgentPipelineWidget
 from .agent_thinking_stream import ThinkingStreamWidget
 from .agent_control_panel import AgentControlPanel
+from .cleanup_preview_card import CleanupPreviewDialog
+from .cleanup_progress_widget import CleanupProgressWidget
 from .agent_widgets import (
     TaskCard,
     AgentStatCard,
@@ -84,6 +87,11 @@ class AgentHubPage(QWidget):
         self.last_error = None
         self._initialized = False
         self._deferred_widgets = {}
+
+        # Cleanup 相关组件
+        self.user_profile = None
+        self.cleanup_plan = None
+        self.cleanup_widget = None
 
         self._init_critical_ui()
         self._connect_critical_signals()
@@ -220,6 +228,7 @@ class AgentHubPage(QWidget):
         self._create_left_panel()
         self._create_right_panel()
         self._create_tool_logger_area()
+        self._create_cleanup_progress_area()
         self._connect_deferred_signals()
         self._initialized = True
 
@@ -308,6 +317,15 @@ class AgentHubPage(QWidget):
         old_layout = old_container.layout()
         old_layout.addWidget(tool_container)
 
+    def _create_cleanup_progress_area(self):
+        """创建清理进度区域"""
+        self.cleanup_widget = CleanupProgressWidget()
+        self.cleanup_widget.setVisible(False)
+
+        # 将清理进度组件添加到任务面板下方
+        task_panel_layout = self.task_panel.layout()
+        task_panel_layout.addWidget(self.cleanup_widget)
+
     def _create_header(self):
         """创建顶部标题栏"""
         self.header_widget = QWidget()
@@ -348,6 +366,11 @@ class AgentHubPage(QWidget):
         ai_review_btn.clicked.connect(self._on_ai_review)
         ai_review_btn.setFixedHeight(36)
         header_layout.addWidget(ai_review_btn)
+
+        self.one_click_cleanup_btn = PrimaryPushButton(FluentIcon.SEND, "一键清理")
+        self.one_click_cleanup_btn.clicked.connect(self._on_one_click_cleanup)
+        self.one_click_cleanup_btn.setFixedHeight(36)
+        header_layout.addWidget(self.one_click_cleanup_btn)
 
         execute_btn = PrimaryPushButton(FluentIcon.DELETE, "执行清理")
         execute_btn.clicked.connect(self._on_execute_cleanup)
@@ -647,6 +670,115 @@ class AgentHubPage(QWidget):
             duration=2000,
         )
         self.pipeline.set_stage_status(AgentStage.CLEANUP, "running")
+
+    def _on_one_click_cleanup(self):
+        """一键清理操作"""
+        InfoBar.info(
+            title="一键清理",
+            content="正在生成智能清理计划...",
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=2000,
+        )
+
+        try:
+            from ..agent.smart_recommender import SmartRecommender, CleanupMode
+
+            # 构建用户画像
+            recommender = SmartRecommender()
+            if self.user_profile is None:
+                self.user_profile = recommender.build_user_profile()
+
+            # 生成清理计划
+            self.cleanup_plan = recommender.recommend(
+                self.user_profile, mode=CleanupMode.BALANCED.value
+            )
+
+            # 显示预览对话框
+            preview_dialog = CleanupPreviewDialog(self.cleanup_plan, self)
+            if (
+                preview_dialog.exec_() == QtWidgets.QDialog.Accepted
+                and preview_dialog.is_confirmed()
+            ):
+                # 用户确认，开始清理
+                self._start_one_click_cleanup()
+
+        except Exception as e:
+            logger.error(f"[AgentHub] 一键清理失败: {e}")
+            InfoBar.error(
+                title="一键清理失败",
+                content=str(e),
+                parent=self,
+                position=InfoBarPosition.TOP,
+                duration=5000,
+            )
+
+    def _start_one_click_cleanup(self):
+        """开始执行一键清理"""
+        if not self.cleanup_plan or not self.user_profile:
+            logger.error("[AgentHub] 清理计划或用户画像不存在")
+            return
+
+        # 显示清理进度组件
+        if self.cleanup_widget:
+            self.cleanup_widget.setVisible(True)
+            self.cleanup_widget.start_cleanup(self.user_profile, self.cleanup_plan.mode)
+
+            # 连接清理完成信号
+            if self.cleanup_widget.cleanup_thread:
+                self.cleanup_widget.cleanup_thread.cleanup_completed.connect(
+                    self._on_one_click_cleanup_completed
+                )
+                self.cleanup_widget.cleanup_thread.cleanup_failed.connect(
+                    self._on_one_click_cleanup_failed
+                )
+
+        # 禁用一键清理按钮
+        self.one_click_cleanup_btn.setEnabled(False)
+
+        InfoBar.success(
+            title="开始清理",
+            content="智能清理已启动，请查看进度...",
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+        )
+
+        # 更新 pipeline 状态
+        self.pipeline.set_stage_status(AgentStage.CLEANUP, "running")
+
+    def _on_one_click_cleanup_completed(self, report):
+        """一键清理完成"""
+        InfoBar.success(
+            title="清理完成",
+            content=f"成功清理 {report.success_items} 个文件，释放 {self._format_size(report.freed_size)}",
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=3000,
+        )
+
+        # 更新统计
+        self._update_stats({"files": report.success_items, "space": report.freed_size})
+
+        # 重新启用按钮
+        self.one_click_cleanup_btn.setEnabled(True)
+
+        logger.info(f"[AgentHub] 一键清理完成: {report.report_id}")
+
+    def _on_one_click_cleanup_failed(self, error_message):
+        """一键清理失败"""
+        InfoBar.error(
+            title="清理失败",
+            content=error_message,
+            parent=self,
+            position=InfoBarPosition.TOP,
+            duration=5000,
+        )
+
+        # 重新启用按钮
+        self.one_click_cleanup_btn.setEnabled(True)
+
+        logger.error(f"[AgentHub] 一键清理失败: {error_message}")
 
     # ========== 公共方法 ==========
 
