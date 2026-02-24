@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 219, in _init_deferred_ui
+    self._create_pipeline_area()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_hub_page.py", line 237, in _create_pipeline_area
+    self.pipeline = AgentPipelineWidget()
+                    ~~~~~~~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_pipeline_widget.py", line 252, in __init__
+    self._init_ui()
+    ~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_pipeline_widget.py", line 271, in _init_ui
+    card = PipelineStageCard(stage_key, icon)
+  File "G:\docker\diskclean\src\ui\agent_pipeline_widget.py", line 43, in __init__
+    self._init_ui()
+    ~~~~~~~~~~~~~^^
+  File "G:\docker\diskclean\src\ui\agent_pipeline_widget.py", line 91, in _init_ui
+    self._update_progress_style("#0078D4")
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'PipelineStageCard' object has no attribute '_update_progress_style'
+
