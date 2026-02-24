@@ -44,6 +44,7 @@ class AgentControlPanel(QWidget):
     scan_type_changed = pyqtSignal(str)  # new_scan_type
     backup_changed = pyqtSignal(bool)  # backup_enabled
     quick_action = pyqtSignal(str)  # action_type
+    action_requested = pyqtSignal(str)  # action_type (for AgentHub compatibility)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -102,9 +103,9 @@ class AgentControlPanel(QWidget):
         layout.addSpacing(4)
 
         modes = [
-            ("disabled", "禁用", "使用传统扫描和分析系统"),
+            ("disabled", "禁用", "使用传统扫描和分析系统", False),
             ("hybrid", "混合模式", "智能体辅助，传统系统后备（推荐）", True),
-            ("full", "完全智能体", "使用智能体系统处理所有操作")
+            ("full", "完全智能体", "使用智能体系统处理所有操作", False)
         ]
 
         for mode_key, mode_name, description, is_default in modes:
