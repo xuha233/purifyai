@@ -174,3 +174,831 @@ Traceback (most recent call last):
                           ^^^^^^^^^^^^^^^^^
 AttributeError: type object 'FluentIcon' has no attribute 'HEALTH'. Did you mean: 'HEART'?
 
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "C:\Users\Ywj\AppData\Local\Programs\Python\Python314\Lib\site-packages\qfluentwidgets\components\widgets\button.py", line 98, in paintEvent
+    if self.icon().isNull():
+       ^^^^^^^^^^^^^^^^^^
+AttributeError: 'IconWidget' object has no attribute 'isNull'
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\developer_console_window.py", line 373, in export_error_report
+    format_dialog = QMessageBox(self)
+                    ^^^^^^^^^^^
+NameError: name 'QMessageBox' is not defined
+
+Traceback (most recent call last):
+  File "G:\docker\diskclean\src\ui\developer_console_window.py", line 373, in export_error_report
+    format_dialog = QMessageBox(self)
+                    ^^^^^^^^^^^
+NameError: name 'QMessageBox' is not defined
+
