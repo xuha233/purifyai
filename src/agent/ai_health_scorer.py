@@ -16,8 +16,8 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from ..core.models import ScanItem
-from ..data.health_history import HealthHistoryManager
+from core.models import ScanItem
+from data.health_history import HealthHistoryManager
 
 
 # ============================================================================

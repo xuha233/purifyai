@@ -27,7 +27,7 @@ from pathlib import Path
 from enum import Enum
 from abc import ABC, abstractmethod
 
-from ..core.models import ScanItem
+from core.models import ScanItem
 from .cleanup_strategy_manager import CleanupStrategy
 from .cleanup_orchestrator import CleanupOrchestrator, CleanupReport
 from .smart_recommender import UserProfile, CleanupPlan, CleanupMode

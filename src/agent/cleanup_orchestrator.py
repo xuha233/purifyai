@@ -22,9 +22,9 @@ import os
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from .smart_recommender import SmartRecommender, UserProfile, CleanupPlan, CleanupMode
-from ..core.models import ScanItem
-from ..core.backup_manager import BackupManager
-from ..core.cleaner import Cleaner
+from core.models import ScanItem
+from core.backup_manager import BackupManager
+from core.cleaner import Cleaner
 
 logger = logging.getLogger(__name__)
 

@@ -21,9 +21,9 @@ from enum import Enum
 from functools import lru_cache
 from threading import Lock
 
-from ..core.models import ScanItem
-# from ..core.scanner import Scanner  # Scanner class not found, removed
-from ..core.risk_assessment import RiskAssessmentSystem
+from core.models import ScanItem
+# from core.scanner import Scanner  # Scanner class not found, removed
+from core.risk_assessment import RiskAssessmentSystem
 
 logger = logging.getLogger(__name__)
 

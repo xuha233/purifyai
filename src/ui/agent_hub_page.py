@@ -50,10 +50,6 @@ from qfluentwidgets import (
     ToolTipPosition,
     RoundMenu,
     Action,
-    MenuAction,
-    SubtitleLabel,
-    CaptionLabel,
-    StrongBodyLabel,
 )
 
 from .agent_status_widgets import AgentStatusFrame, AgentStatsWidget
@@ -416,7 +412,7 @@ class CleanupTab(QWidget):
     def _show_preview_dialog(self):
         """显示清理预览对话框"""
         try:
-            from ..agent.smart_recommender import SmartRecommender, CleanupMode
+            from agent.smart_recommender import SmartRecommender, CleanupMode
 
             recommender = SmartRecommender()
             if self.user_profile is None:
@@ -762,7 +758,7 @@ class AgentHubPage(QWidget):
         # Cleanup 相关组件
         self.user_profile = None
         self.cleanup_plan = None
-        self.cleanup_widget = None
+        # cleanup_widget 是 @property，不需要初始化，会从 cleanup_tab.progress_widget 获取
 
         self._init_ui()
         self._connect_signals()

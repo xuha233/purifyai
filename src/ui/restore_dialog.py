@@ -41,8 +41,8 @@ from qfluentwidgets import (
     Theme,
 )
 
-from ..core.restore_manager import RestoreManager, RestoreSession, UndoHistory
-from ..agent.cleanup_orchestrator import CleanupReport
+from core.restore_manager import RestoreManager, RestoreSession, UndoHistory
+from agent.cleanup_orchestrator import CleanupReport
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

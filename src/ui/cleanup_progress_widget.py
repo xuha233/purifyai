@@ -33,14 +33,14 @@ from qfluentwidgets import (
     InfoBarPosition,
 )
 
-from ..agent.cleanup_orchestrator import (
+from agent.cleanup_orchestrator import (
     CleanupOrchestrator,
     CleanupSignal,
     CleanupPhase,
     CleanupReport,
 )
-from ..agent.smart_recommender import UserProfile, CleanupMode, CleanupPlan
-from ..ui.restore_dialog import RestoreDialog
+from agent.smart_recommender import UserProfile, CleanupMode, CleanupPlan
+from ui.restore_dialog import RestoreDialog
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -507,7 +507,7 @@ class CleanupProgressWidget(SimpleCardWidget):
 
             if cleaned_files:
                 # 调用 SmartRecommender 保存文件列表
-                from ..agent.smart_recommender import SmartRecommender
+                from agent.smart_recommender import SmartRecommender
 
                 recommender = SmartRecommender()
                 recommender.save_last_cleanup_files(cleaned_files)
@@ -544,9 +544,9 @@ class CleanupProgressWidget(SimpleCardWidget):
 
         # 显示恢复对话框
         try:
-            from ..core.restore_manager import RestoreManager
-            from ..core.restore_signal import RestoreSignal
-            from ..ui.restore_dialog import RestoreDialog, RestoreProgressDialog
+            from core.restore_manager import RestoreManager
+            from core.restore_signal import RestoreSignal
+            from ui.restore_dialog import RestoreDialog, RestoreProgressDialog
 
             # 创建恢复对话框
             dialog = RestoreDialog(self)
@@ -574,7 +574,7 @@ class CleanupProgressWidget(SimpleCardWidget):
     def _on_undo_fallback(self):
         """撤销清理（后备方法，使用 BackupManager）"""
         try:
-            from ..core.backup_manager import BackupManager
+            from core.backup_manager import BackupManager
 
             # 创建备份管理器
             backup_manager = BackupManager()

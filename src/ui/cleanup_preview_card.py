@@ -31,9 +31,9 @@ from qfluentwidgets import (
     InfoBarPosition,
 )
 
-from ..agent.smart_recommender import CleanupPlan, UserScenario, CleanupMode
-from ..agent.cleanup_orchestrator import CleanupOrchestrator
-from ..core.models import ScanItem
+from agent.smart_recommender import CleanupPlan, UserScenario, CleanupMode
+from agent.cleanup_orchestrator import CleanupOrchestrator
+from core.models import ScanItem
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -354,7 +354,3 @@ class CleanupPreviewDialog(QDialog):
     def is_confirmed(self) -> bool:
         """是否已确认"""
         return self.confirmed
-
-
-# 修复导入
-import QtWidgets
