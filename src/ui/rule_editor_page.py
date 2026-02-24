@@ -46,15 +46,15 @@ from qfluentwidgets import (
     ScrollArea,
 )
 
-from ..core.rule_manager import RuleManager
-from ..core.cleanup_rule import (
+from src.core.rule_manager import RuleManager
+from src.core.cleanup_rule import (
     CleanupRule,
     RuleType,
     RuleAction,
     ConditionType,
     RuleOperator,
 )
-from .rule_edit_dialog import RuleEditDialog
+from src.ui.rule_edit_dialog import RuleEditDialog
 
 
 logger = logging.getLogger(__name__)
@@ -213,7 +213,7 @@ class RuleEditorPage(QWidget):
         self.copy_btn.clicked.connect(self._on_copy_rule)
         bottom_toolbar.addWidget(self.copy_btn)
 
-        self.test_btn = PushButton(FluentIcon.TEST_COACH, "测试...")
+        self.test_btn = PushButton(FluentIcon.CODE, "测试...")
         bottom_toolbar.addWidget(self.test_btn)
 
         layout.addLayout(bottom_toolbar)

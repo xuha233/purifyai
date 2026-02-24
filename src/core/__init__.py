@@ -2,8 +2,11 @@
 Core 模块初始化
 """
 
-# AI 客户端
-from .ai_client import AIClient, AIConfig
+# AI 客户端 (可能在某些测试环境中导入失败)
+try:
+    from .ai_client import AIClient, AIConfig
+except ImportError:
+    pass
 
 # 规则引擎
 from .rule_engine import RuleEngine, RiskLevel, Rule, get_rule_engine
