@@ -7,6 +7,9 @@ Agent 包 - 智能体核心模块
 - agents: 各类型智能体
 - tools: 工具层
 - models: 智能体数据模型
+- exceptions: 异常处理
+- recovery: 自动恢复
+- error_logger: 错误日志
 """
 from typing import Optional, TYPE_CHECKING
 
@@ -15,6 +18,11 @@ from .orchestrator import AgentOrchestrator, AgentType, AIConfig
 from .models_agent import (
     AgentMessage, AgentRole, AgentToolCall, AgentToolResult, AgentSession
 )
+
+# 导出异常处理模块
+from . import exceptions as exceptions_module
+from . import recovery as recovery_module
+from . import error_logger as error_logger_module
 
 # 延迟导入循环依赖
 if TYPE_CHECKING:
@@ -25,7 +33,11 @@ __all__ = [
     "AgentMessage", "AgentRole", "AgentToolCall", "AgentToolResult", "AgentSession",
     "create_scan_agent", "create_review_agent", "create_cleanup_agent", "create_report_agent",
     "get_orchestrator",
-    "get_agent_integration", "AgentIntegration"
+    "get_agent_integration", "AgentIntegration",
+    # 异常处理
+    "exceptions",
+    "recovery",
+    "error_logger"
 ]
 
 

@@ -7,6 +7,7 @@ Agent Orchestrator - 智能体编排器
 2. 协调智能体之间的通信
 3. 处理工具调用和结果返回
 4. 管理会话状态
+5. 提供异常处理和自动恢复
 """
 from typing import Dict, List, Any, Optional, Callable
 from enum import Enum
@@ -18,7 +19,15 @@ from .models_agent import (
     AgentSession, AgentMessage, AgentRole, AgentToolCall,
     AgentToolResult, ContentBlock, AgentConfig
 )
-from .tools import get_tool, get_tools_schema, print_tools_info
+from .tools import get_tool, get_tools_schema, print_tools_info, execute_tool_safely, format_tool_error_for_user
+from .exceptions import (
+    AgentException, AgentStateException, ToolExecutionException,
+    ToolNotFoundException, AIAuthenticationException, AIRateLimitException,
+    AIConnectionException, AIQuotaExceededException, unwrap_agent_exception,
+    format_error_for_user
+)
+from .recovery import get_recovery_manager, RecoveryConfig
+from .error_logger import log_exception
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -56,13 +65,21 @@ class AgentOrchestrator:
     """智能体编排器
 
     负责协调不同类型的智能体，管理会话状态，处理工具调用。
+    集成了异常处理和自动恢复机制。
     """
 
-    def __init__(self, ai_config: Optional[AIConfig] = None):
+    def __init__(
+        self,
+        ai_config: Optional[AIConfig] = None,
+        enable_recovery: bool = True,
+        recovery_config: Optional[RecoveryConfig] = None
+    ):
         """初始化编排器
 
         Args:
             ai_config: AI 配置对象
+            enable_recovery: 是否启用自动恢复
+            recovery_config: 恢复配置
         """
         self.ai_config = ai_config or AIConfig(
             api_key="",  # 将从配置加载
@@ -72,10 +89,17 @@ class AgentOrchestrator:
         self.active_agent_type: Optional[AgentType] = None
         self.current_session_id: Optional[str] = None
 
+        # 配置恢复管理器
+        self.enable_recovery = enable_recovery
+        self._recovery_manager = None
+        if enable_recovery:
+            self._recovery_manager = get_recovery_manager(recovery_config)
+
         # 注册的工具
         print_tools_info()
 
-        logger.info(f"[ORCHESTRATOR] 初始化完成, AI模型: {self.ai_config.model}")
+        logger.info(f"[ORCHESTRATOR] 初始化完成, AI模型: {self.ai_config.model}, "
+                   f"恢复: {'启用' if enable_recovery else '禁用'}")
 
     def create_session(
         self,
@@ -230,27 +254,42 @@ class AgentOrchestrator:
         Returns:
             工具执行结果
         """
-        tool = get_tool(tool_name)
-        if not tool:
+        # 使用增强的工具执行函数
+        result = execute_tool_safely(tool_name, tool_input, workspace)
+
+        if result["success"]:
+            logger.debug(f"[ORCHESTRATOR] 工具执行成功: {tool_name}")
             return {
-                "output": f"工具 '{tool_name}' 未找到",
-                "is_error": True
+                "output": result["output"],
+                "is_error": False,
+                "duration_ms": result.get("duration_ms", 0)
             }
 
+        # 执行失败，记录错误日志
+        error_msg = result.get("error", "未知错误")
+        logger.error(f"[ORCHESTRATOR] 工具执行失败: {tool_name}, 错误: {error_msg}")
+
+        # 记录到错误日志
         try:
-            # 执行工具
-            result = tool.execute(tool_input, workspace)
-            logger.debug(f"[ORCHESTRATOR] 工具执行: {tool_name}，结果长度: {len(result)}")
-            return {
-                "output": result,
-                "is_error": False
-            }
+            log_exception(
+                exception=ToolExecutionException(
+                    message=error_msg,
+                    tool_name=tool_name,
+                    inputs=tool_input,
+                    session_id=self.current_session_id
+                ),
+                session_id=self.current_session_id,
+                tool_name=tool_name,
+                workspace=workspace
+            )
         except Exception as e:
-            logger.error(f"[ORCHESTRATOR] 工具执行失败 {tool_name}: {e}")
-            return {
-                "output": str(e),
-                "is_error": True
-            }
+            logger.debug(f"[ORCHESTRATOR] 记录错误日志失败: {e}")
+
+        return {
+            "output": format_tool_error_for_user(result.get("error_details", {})),
+            "is_error": True,
+            "error_details": result.get("error_details")
+        }
 
     def _call_ai(
         self,
@@ -268,8 +307,7 @@ class AgentOrchestrator:
         Returns:
             AI 响应
         """
-        try:
-            # 这里使用 anthropic SDK
+        def _make_api_call():
             from anthropic import Anthropic
 
             client = Anthropic(api_key=self.ai_config.api_key)
@@ -346,6 +384,58 @@ class AgentOrchestrator:
             logger.debug(f"[ORCHESTRATOR] AI 调用完成, stop_reason: {response.stop_reason}")
             return result
 
+        def _handle_auth_error(e):
+            """处理认证错误"""
+            exc = AIAuthenticationException(
+                message="AI API 认证失败，请检查 API Key 配置"
+            ).update_context(session_id=self.current_session_id)
+            log_exception(exc, session_id=self.current_session_id)
+            raise exc
+
+        def _handle_rate_limit_error(e, retry_after=None):
+            """处理速率限制错误"""
+            msg = "AI API 请求过于频繁，请稍后再试"
+            if retry_after:
+                msg += f"，建议等待 {retry_after} 秒"
+            exc = AIRateLimitException(message=msg, retry_after=retry_after).update_context(
+                session_id=self.current_session_id
+            )
+            log_exception(exc, session_id=self.current_session_id)
+            raise exc
+
+        def _handle_connection_error(e):
+            """处理连接错误"""
+            exc = AIConnectionException(message=f"AI API 连接失败: {str(e)}").update_context(
+                session_id=self.current_session_id
+            )
+            log_exception(exc, session_id=self.current_session_id)
+            raise exc
+
+        def _handle_quota_error(e):
+            """处理配额超限错误"""
+            exc = AIQuotaExceededException(message="AI API 配额已用尽，请检查账户额度").update_context(
+                session_id=self.current_session_id
+            )
+            log_exception(exc, session_id=self.current_session_id)
+            raise exc
+
+        # 使用恢复管理器执行（如果启用）
+        if self._recovery_manager:
+            try:
+                result = self._recovery_manager.execute_with_recovery(
+                    func=_make_api_call,
+                    name=f"ai_call_{self.ai_config.model}"
+                )
+                if not result.success and result.error:
+                    raise result.error
+                return _make_api_call()
+            except Exception as e:
+                # 已在恢复管理器中处理
+                pass
+
+        try:
+            return _make_api_call()
+
         except ImportError:
             # 如果没有 anthropic SDK，返回模拟响应
             logger.warning("[ORCHESTRATOR] anthropic SDK 未安装，使用模拟模式")
@@ -375,8 +465,34 @@ class AgentOrchestrator:
                     }
                 ]
             }
+
+        # 处理 Anthropic SDK 特定错误
         except Exception as e:
+            err_msg = str(e)
+            error_type = type(e).__name__
+
+            if "authentication" in err_msg.lower() or "auth" in error_type.lower():
+                _handle_auth_error(e)
+            elif "rate limit" in err_msg.lower() or "429" in err_msg:
+                # 尝试提取重试延迟
+                retry_after = None
+                if hasattr(e, 'headers') and e.headers.get('retry-after'):
+                    try:
+                        retry_after = int(e.headers['retry-after'])
+                    except (ValueError, TypeError):
+                        pass
+                _handle_rate_limit_error(e, retry_after)
+            elif "quota" in err_msg.lower() or "429" in err_msg:
+                _handle_quota_error(e)
+            elif isinstance(e, (ConnectionError, TimeoutError)):
+                _handle_connection_error(e)
+
+            # 通用错误
             logger.error(f"[ORCHESTRATOR] AI 调用失败: {e}")
+            log_exception(
+                Exception(f"AI 调用失败: {str(e)}"),
+                session_id=self.current_session_id
+            )
             return {
                 "id": "error_response",
                 "model": "error",
@@ -384,7 +500,7 @@ class AgentOrchestrator:
                 "content": [
                     {
                         "type": "text",
-                        "text": f"AI 调用失败: {str(e)}"
+                        "text": format_error_for_user(e, include_details=True)
                     }
                 ]
             }
@@ -432,8 +548,29 @@ class AgentOrchestrator:
         Returns:
             执行结果
         """
+        import time
+
         # 创建会话
-        session = self.create_session(agent_type, workspace, metadata)
+        try:
+            session = self.create_session(agent_type, workspace, metadata)
+        except Exception as e:
+            logger.error(f"[ORCHESTRATOR] 创建会话失败: {e}")
+            log_exception(
+                AgentStateException(
+                    message=f"创建会话失败: {str(e)}",
+                    session_id=None
+                ).capture_stack(),
+                agent_type=agent_type.value
+            )
+            return {
+                "session_id": None,
+                "agent_type": agent_type.value,
+                "turns": 0,
+                "responses": [],
+                "tool_calls": [],
+                "is_complete": False,
+                "error": format_error_for_user(e, include_details=True)
+            }
 
         logger.info(f"[ORCHESTRATOR] 开始智能体循环: {agent_type.value}, 最大轮次: {max_turns}")
 
@@ -444,8 +581,13 @@ class AgentOrchestrator:
             "responses": [],
             "tool_calls": [],
             "is_complete": False,
-            "error": None
+            "error": None,
+            "errors": [],  # 收集所有错误
+            "duration_ms": 0,
+            "tool_errors": []  # 工具执行错误
         }
+
+        start_time = time.time()
 
         # 处理初始消息
         try:
@@ -457,19 +599,65 @@ class AgentOrchestrator:
 
             # 继续循环直到完成或达到最大轮次
             while not results["is_complete"] and results["turns"] < max_turns:
-                result = self.process_message("请继续", session.session_id)
-                results["responses"].append(result["response_text"])
-                results["tool_calls"].extend(result["tool_calls"])
-                results["is_complete"] = result["is_complete"]
-                results["turns"] += 1
+                try:
+                    result = self.process_message("请继续", session.session_id)
+                    results["responses"].append(result["response_text"])
+                    results["tool_calls"].extend(result["tool_calls"])
+                    results["is_complete"] = result["is_complete"]
+                    results["turns"] += 1
 
-                logger.debug(f"[ORCHESTRATOR] 轮次 {results['turns']}/{max_turns}")
+                    logger.debug(f"[ORCHESTRATOR] 轮次 {results['turns']}/{max_turns}")
+
+                except Exception as e:
+                    # 记录轮级错误但继续执行
+                    logger.warning(f"[ORCHESTRATOR] 轮次 {results['turns'] + 1} 出错: {e}")
+                    results["errors"].append({
+                        "turn": results["turns"] + 1,
+                        "error": str(e),
+                        "user_message": format_error_for_user(e)
+                    })
+                    log_exception(
+                        e,
+                        session_id=session.session_id,
+                        agent_type=agent_type.value,
+                        workspace=workspace
+                    )
+
+                    # 检查是否严重到需要终止
+                    agent_exc = unwrap_agent_exception(e)
+                    if agent_exc and not agent_exc.recoverable:
+                        logger.error(f"[ORCHESTRATOR] 遇到不可恢复错误，终止循环")
+                        results["error"] = format_error_for_user(e, include_details=True)
+                        break
+
+                    # 尝试恢复后继续
+                    results["turns"] += 1
 
         except Exception as e:
             logger.error(f"[ORCHESTRATOR] 智能体循环出错: {e}")
-            results["error"] = str(e)
+            results["error"] = format_error_for_user(e, include_details=True)
+            results["errors"].append({
+                "stage": "initial",
+                "error": str(e),
+                "user_message": format_error_for_user(e)
+            })
 
-        logger.info(f"[ORCHESTRATOR] 智能体循环完成: {results['turns']} 轮次, 完成: {results['is_complete']}")
+            # 记录到错误日志
+            log_exception(
+                e,
+                session_id=session.session_id,
+                agent_type=agent_type.value,
+                workspace=workspace,
+                duration_ms=int((time.time() - start_time) * 1000)
+            )
+
+        results["duration_ms"] = int((time.time() - start_time) * 1000)
+
+        logger.info(
+            f"[ORCHESTRATOR] 智能体循环完成: {results['turns']} 轮次, "
+            f"完成: {results['is_complete']}, 耗时: {results['duration_ms']}ms"
+        )
+
         return results
 
     def close_session(self, session_id: str):

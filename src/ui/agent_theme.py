@@ -10,22 +10,23 @@ class AgentTheme:
     """智能体主题颜色"""
 
     # 状态颜色
-    IDLE = "#999999"         # 灰色
-    RUNNING = "#0078D4"      # 蓝色
-    COMPLETED = "#28a745"    # 绿色
-    ERROR = "#dc3545"        # 红色
-    PAUSED = "#FFA500"       # 橙色
+    IDLE = "#999999"  # 灰色
+    RUNNING = "#0078D4"  # 蓝色
+    COMPLETED = "#28a745"  # 绿色
+    ERROR = "#dc3545"  # 红色
+    PAUSED = "#FFA500"  # 橙色
+    PRIMARY = "#0078D4"  # 主色调 - 蓝色
 
     # 阶段颜色
-    SCAN_COLOR = "#0078D4"       # 蓝色
-    REVIEW_COLOR = "#FFA500"     # 橙色
-    CLEANUP_COLOR = "#28a745"    # 绿色
-    REPORT_COLOR = "#9C27B0"     # 紫色
+    SCAN_COLOR = "#0078D4"  # 蓝色
+    REVIEW_COLOR = "#FFA500"  # 橙色
+    CLEANUP_COLOR = "#28a745"  # 绿色
+    REPORT_COLOR = "#9C27B0"  # 紫色
 
     # AI 风险等级颜色
-    SAFE = "#52C41A"             # 绿色
-    SUSPICIOUS = "#FAAD14"       # 黄色
-    DANGEROUS = "#FF4D4F"        # 红色
+    SAFE = "#52C41A"  # 绿色
+    SUSPICIOUS = "#FAAD14"  # 黄色
+    DANGEROUS = "#FF4D4F"  # 红色
 
     # 背景颜色
     CARD_BG = "#ffffff"
@@ -104,18 +105,13 @@ class AgentStage:
     CLEANUP = "cleanup"
     REPORT = "report"
 
-    STAGE_NAMES = {
-        SCAN: "扫描",
-        REVIEW: "审查",
-        CLEANUP: "执行",
-        REPORT: "报告"
-    }
+    STAGE_NAMES = {SCAN: "扫描", REVIEW: "审查", CLEANUP: "执行", REPORT: "报告"}
 
     STAGE_ICONS = {
         SCAN: "search",
         REVIEW: "checkbox",
         CLEANUP: "delete",
-        REPORT: "document"
+        REPORT: "document",
     }
 
     @classmethod
@@ -149,18 +145,14 @@ class AgentStatus:
         RUNNING: "运行中",
         PAUSED: "已暂停",
         COMPLETED: "已完成",
-        ERROR: "错误"
+        ERROR: "错误",
     }
 
     @classmethod
     def get_name(cls, status: str) -> str:
         """获取状态名称"""
-        return cls.STAGE_NAMES.get(status, status)
+        return cls.STATUS_NAMES.get(status, status)
 
 
 # 导出
-__all__ = [
-    "AgentTheme",
-    "AgentStage",
-    "AgentStatus"
-]
+__all__ = ["AgentTheme", "AgentStage", "AgentStatus"]

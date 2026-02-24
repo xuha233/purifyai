@@ -15,7 +15,8 @@ import json
 
 from PyQt5.QtCore import QObject, pyqtSignal, QThread, QMutex
 
-from .models import ScanItem, RiskLevel
+from .models import ScanItem
+from .annotation import RiskLevel
 from .models_smart import CleanupPlan, CleanupItem, ExecutionResult, ExecutionStatus, CleanupStatus
 from agent import (
     get_orchestrator, AgentType, AIConfig,
@@ -196,20 +197,21 @@ class AgentScanner(QThread):
         for i, file_info in enumerate(files):
             path = file_info.get("path", "")
             size = file_info.get("size", 0)
-            risk = file_info.get("risk", "unknown")
+            risk = file_info.get("risk", "suspicious")  # safe, suspicious, dangerous
             category = file_info.get("category", "unknown")
 
-            # 创建 ScanItem
             item = ScanItem(
                 path=path,
                 size=size,
-                category=category,
-                reason="agent_scan",
-                last_modified=int(time.time()),
-                is_garbage=file_info.get("is_garbage", risk != "dangerous"),
-                risk_level=risk,
-                confidence=file_info.get("confidence", 0.5)
+                item_type='file',  # 扫描的是文件类型
+                description=f"{category} - agent_scan",  # 使用 category 作为描述
+                risk_level=risk
             )
+
+            # 设置额外字段（ScanItem 有 judgment_method 和 ai_explanation 属性）
+            item.judgment_method = 'ai'  # 智能体扫描
+            if file_info.get("is_garbage", risk != "dangerous"):
+                item.ai_explanation = f"AI判断为垃圾文件，置信度: {file_info.get('confidence', 0.5):.2f}"
 
             items.append(item)
 

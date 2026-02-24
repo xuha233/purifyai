@@ -121,18 +121,22 @@ class TestAgentTools:
 
     def test_tool_registration(self):
         """测试工具注册"""
-        # 注册测试工具
-        tool_inst = DummyTool()
-        _tools_registry = get_all_tools()
+        # 获取初始工具计数
+        initial_registry = get_all_tools()
+        initial_count = len(initial_registry)
 
-        initial_count = len(_tools_registry)
-
-        # 使用装饰器注册
+        # 使用装饰器注册工具类
         registered = register_tool(DummyTool)
-        assert registered == tool_inst
 
-        # 验证已注册
+        # 验证注册返回的是一个 DummyTool 实例
+        assert isinstance(registered, DummyTool)
+        assert registered.NAME == DummyTool.NAME
+
+        # 验证工具已注册
         assert DummyTool.NAME in get_all_tools()
+
+        # 验证工具数量可能增加（如果之前未注册）
+        # 注意：DummyTool 可能已经被其他测试注册过
 
     def test_get_tool(self):
         """测试获取工具"""

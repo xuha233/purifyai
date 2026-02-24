@@ -104,6 +104,55 @@ class ConfigManager:
             print(msg)
         return cfg
 
+    # ========== 成本控制配置 ==========
+
+    def get_cost_control_config(self) -> dict:
+        """获取成本控制配置"""
+        self._load_config()
+        return {
+            'mode': self.get('cost_control_mode', 'fallback'),
+            'max_calls_per_scan': self.get('max_calls_per_scan', 100),
+            'max_calls_per_day': self.get('max_calls_per_day', 1000),
+            'max_calls_per_month': self.get('max_calls_per_month', 10000),
+            'max_budget_per_scan': self.get('max_budget_per_scan', 2.0),
+            'max_budget_per_day': self.get('max_budget_per_day', 10.0),
+            'max_budget_per_month': self.get('max_budget_per_month', 50.0),
+            'fallback_to_rules': self.get('fallback_to_rules', True),
+            'alert_threshold': self.get('alert_threshold', 0.8),
+        }
+
+    def set_cost_control_config(
+        self,
+        mode: str = None,
+        max_calls_per_scan: int = None,
+        max_calls_per_day: int = None,
+        max_calls_per_month: int = None,
+        max_budget_per_scan: float = None,
+        max_budget_per_day: float = None,
+        max_budget_per_month: float = None,
+        fallback_to_rules: bool = None,
+        alert_threshold: float = None
+    ):
+        """设置成本控制配置"""
+        if mode is not None:
+            self.set('cost_control_mode', mode)
+        if max_calls_per_scan is not None:
+            self.set('max_calls_per_scan', max_calls_per_scan)
+        if max_calls_per_day is not None:
+            self.set('max_calls_per_day', max_calls_per_day)
+        if max_calls_per_month is not None:
+            self.set('max_calls_per_month', max_calls_per_month)
+        if max_budget_per_scan is not None:
+            self.set('max_budget_per_scan', max_budget_per_scan)
+        if max_budget_per_day is not None:
+            self.set('max_budget_per_day', max_budget_per_day)
+        if max_budget_per_month is not None:
+            self.set('max_budget_per_month', max_budget_per_month)
+        if fallback_to_rules is not None:
+            self.set('fallback_to_rules', fallback_to_rules)
+        if alert_threshold is not None:
+            self.set('alert_threshold', alert_threshold)
+
 
 # 全局实例
 _config_manager = None

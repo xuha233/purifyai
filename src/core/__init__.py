@@ -85,6 +85,19 @@ from .recovery_manager import (
     RestoreStatus, get_recovery_manager
 )
 
+# AI 成本控制
+from .cost_controller import (
+    CostController, CostConfig, CostStats,
+    CostControlMode, BudgetAlertLevel,
+    get_cost_controller
+)
+
+# AI 分析器
+from .ai_analyzer import (
+    AIAnalyzer, AIAnalysisStats, CostControlConfig, CostControlMode,
+    get_ai_analyzer, create_ai_analyzer_with_cost_control
+)
+
 __all__ = [
     # AI 客户端
     'AIClient', 'AIConfig',
@@ -154,4 +167,17 @@ __all__ = [
     'RecoveryStats',
     'RestoreStatus',
     'get_recovery_manager',
+    # AI 成本控制
+    'CostController',
+    'CostConfig',
+    'CostStats',
+    'CostControlMode',
+    'BudgetAlertLevel',
+    'get_cost_controller',
+    # AI 分析器
+    'AIAnalyzer',
+    'AIAnalysisStats',
+    'CostControlConfig',
+    'get_ai_analyzer',
+    'create_ai_analyzer_with_cost_control',
 ]

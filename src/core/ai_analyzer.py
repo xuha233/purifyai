@@ -16,9 +16,14 @@ Phase 2 Day 4 MVP功能:
 成本对比:
 - 全AI: 10万项 → 2000次API
 - 混合: 2万可疑项 → 400次API (~节省80%)
+
+成本计算（基于 GLM-4-Flash 定价）:
+- Input: $0.14 / 1M tokens
+- Output: $0.28 / 1M tokens
+- 每次调用约 1000 tokens 输入 + 500 tokens 输出 = $0.21 / 次
 """
 from typing import List, Dict, Optional, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 import time
 
@@ -26,6 +31,7 @@ from .ai_client import AIClient, AIConfig
 from .ai_prompt_builder import PromptBuilder
 from .ai_response_parser import ResponseParser
 from .rule_engine import RiskLevel, RuleEngine, Rule
+from .cost_controller import CostController, CostConfig, CostControlMode as CCCMode
 from .models import ScanItem
 from .models_smart import CleanupItem, CleanupPlan
 from utils.logger import get_logger
@@ -52,6 +58,13 @@ class AIAnalysisStats:
     dangerous_count: int = 0
     ai_calls: int = 0
     execution_time: float = 0.0
+    # 成本信息
+    total_cost: float = 0.0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    # 降级状态
+    is_degraded: bool = False
+    degradation_reason: str = ""
 
     @property
     def ai_coverage(self) -> float:
@@ -59,6 +72,24 @@ class AIAnalysisStats:
         if self.total_items == 0:
             return 0.0
         return (self.items_with_ai / self.total_items) * 100
+
+    def to_dict(self) -> Dict:
+        """转换为字典"""
+        return {
+            "total_items": self.total_items,
+            "items_with_ai": self.items_with_ai,
+            "items_with_rules_only": self.items_with_rules_only,
+            "safe_count": self.safe_count,
+            "suspicious_count": self.suspicious_count,
+            "dangerous_count": self.dangerous_count,
+            "ai_calls": self.ai_calls,
+            "execution_time": round(self.execution_time, 2),
+            "total_cost": round(self.total_cost, 4),
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
+            "is_degraded": self.is_degraded,
+            "degradation_reason": self.degradation_reason
+        }
 
 
 @dataclass
@@ -83,18 +114,21 @@ class AIAnalyzer:
     - 调用计数器限制单次扫描的AI调用次数
     - 超限自动降级到规则引擎
     - 批量评估提高效率
+    - 预算限制（USD）
     """
 
     def __init__(
         self,
         ai_config: Optional[AIConfig] = None,
-        cost_config: Optional[CostControlConfig] = None
+        cost_config: Optional[CostControlConfig] = None,
+        cost_controller: Optional[CostController] = None
     ):
         """初始化AI分析器
 
         Args:
             ai_config: AI配置
             cost_config: 成本控制配置
+            cost_controller: 成本控制器实例
         """
         self.ai_config = ai_config or AIConfig()
         self.cost_config = cost_config or CostControlConfig()
@@ -105,12 +139,27 @@ class AIAnalyzer:
         self.response_parser = ResponseParser(strict=False)
         self.rule_engine = RuleEngine()
 
+        # 成本控制
+        self.cost_controller = cost_controller
+
         # 成本控制状态
         self._call_count = 0
         self._current_stats = AIAnalysisStats()
         self._start_time = 0.0
 
         self.logger = logger
+
+    def _create_cost_controller(self) -> CostController:
+        """创建成本控制器（如果尚未创建）"""
+        if self.cost_controller is None:
+            cc_config = CostConfig(
+                mode=CCCMode(self.cost_config.mode.value),
+                max_calls_per_scan=self.cost_config.max_calls_per_scan,
+                max_budget_per_scan=2.0,  # 默认 $2.00
+                fallback_to_rules=self.cost_config.fallback_to_rules
+            )
+            self.cost_controller = CostController(cc_config)
+        return self.cost_controller
 
     def analyze_scan_results(
         self,
@@ -130,8 +179,14 @@ class AIAnalyzer:
         self._current_stats = AIAnalysisStats(total_items=len(items))
         self._call_count = 0
 
+        # 确保成本控制器已初始化
+        self._create_cost_controller()
+
         self.logger.info(f"[AI_ANALYZER] 开始分析 {len(items)} 个扫描项")
         self.logger.info(f"[AI_ANALYZER] 成本控制模式: {self.cost_config.mode.value}")
+
+        # 重置成本控制器统计
+        self.cost_controller.reset_scan_stats()
 
         # 生成计划ID
         plan_id = f"plan_{int(time.time())}"
@@ -165,6 +220,7 @@ class AIAnalyzer:
         self.logger.info(f"[AI_ANALYZER] 分析完成: "
                         f"总计={len(items)}, "
                         f"AI评估={self._call_count}, "
+                        f"成本=${self._current_stats.total_cost:.4f}, "
                         f"耗时={self._current_stats.execution_time:.2f}s")
 
         return plan
@@ -241,23 +297,47 @@ class AIAnalyzer:
 
         self.logger.info(f"[AI_ANALYZER] 需要AI评估: {len(items_to_assess)} 项")
 
+        # 设置成本控制器回调
+        def on_limit_reached(reason: str):
+            self._current_stats.is_degraded = True
+            self._current_stats.degradation_reason = reason
+            self.logger.warning(f"[AI_ANALYZER] 已降级: {reason}")
+
+        self.cost_controller.set_on_limit_reached(on_limit_reached)
+
         # 批量评估
         total_assessed = 0
+        input_tokens_total = 0
+        output_tokens_total = 0
+
         for item in items_to_assess:
-            # 检查调用次数限制
-            if (self.cost_config.max_calls_per_scan > 0 and
-                self._call_count >= self.cost_config.max_calls_per_scan):
+            # 使用成本控制器检查是否可以调用
+            can_call, reason = self.cost_controller.can_make_call()
+            if not can_call:
                 self.logger.warning(
-                    f"[AI_ANALYZER] 达到最大调用限制 ({self.cost_config.max_calls_per_scan})，"
-                    f"降级到规则引擎"
+                    f"[AI_ANALYZER] {reason}，降级到规则引擎"
                 )
+                self._current_stats.is_degraded = True
+                self._current_stats.degradation_reason = reason
                 break
 
             # AI评估
             try:
-                self._ai_assess_single(item)
+                input_tokens, output_tokens = self._ai_assess_single(item)
+
+                # 记录调用
+                self.cost_controller.record_call(
+                    input_tokens=input_tokens or 1000,
+                    output_tokens=output_tokens or 500
+                )
+
                 total_assessed += 1
                 self._call_count += 1
+
+                if input_tokens:
+                    input_tokens_total += input_tokens
+                if output_tokens:
+                    output_tokens_total += output_tokens
 
                 if progress_callback:
                     progress_callback(total_assessed, len(items_to_assess))
@@ -269,19 +349,28 @@ class AIAnalyzer:
 
         self._current_stats.items_with_ai = total_assessed
         self._current_stats.ai_calls = self._call_count
+        self._current_stats.input_tokens = input_tokens_total
+        self._current_stats.output_tokens = output_tokens_total
+        self._current_stats.total_cost = self.cost_controller.get_stats().cost_in_current_period
 
-    def _ai_assess_single(self, item: CleanupItem):
+    def _ai_assess_single(self, item: CleanupItem) -> tuple[int, int]:
         """AI评估单个项目
 
         Args:
             item: 清理项
+
+        Returns:
+            (input_tokens, output_tokens)
         """
         if not self.ai_client:
-            return
+            return 0, 0
 
         # 构建提示词
         scan_item = self._to_scan_item(item)
         prompt = self.prompt_builder.build_assessment_prompt(scan_item)
+
+        # 估算输入 tokens（基于字符数）
+        input_tokens = len(prompt) // 4  # 约 4 字符 = 1 token
 
         # 调用AI
         success, response = self.ai_client.chat([
@@ -292,7 +381,10 @@ class AIAnalyzer:
             self.logger.warning(f"[AI_ANALYZER] AI调用失败: {response}")
             if self.cost_config.fallback_to_rules:
                 self.logger.info("[AI_ANALYZER] 回退到规则引擎")
-            return
+            return input_tokens, 0
+
+        # 估算输出 tokens
+        output_tokens = len(response) // 4
 
         # 解析响应
         original_risk_enum = RiskLevel.SAFE  # 默认值
@@ -303,6 +395,8 @@ class AIAnalyzer:
             self._current_stats.items_with_ai += 1
         elif self.cost_config.fallback_to_rules:
             self.logger.info("[AI_ANALYZER] 解析失败，回退到规则引擎")
+
+        return input_tokens, output_tokens
 
     def _to_cleanup_item(self, scan_item: ScanItem, risk_result: Dict) -> CleanupItem:
         """将 ScanItem 转换为 CleanupItem
@@ -440,16 +534,61 @@ class AIAnalyzer:
             报告文本
         """
         stats = self.get_stats()
-        return (
+        report = (
             f"AI分析统计:\n"
             f"  总项目: {stats.total_items}\n"
             f"  AI评估: {stats.items_with_ai} ({stats.ai_coverage:.1f}%)\n"
             f"  规则仅: {stats.items_with_rules_only}\n"
             f"  AI调用: {stats.ai_calls}\n"
+            f"  成本: ${stats.total_cost:.4f}\n"
+            f"  Tokens: 输入={stats.input_tokens}, 输出={stats.output_tokens}\n"
             f"  耗时: {stats.execution_time:.2f}s\n"
             f"  风险分布: Safe={stats.safe_count}, "
             f"Suspicious={stats.suspicious_count}, "
             f"Dangerous={stats.dangerous_count}"
+        )
+
+        if stats.is_degraded:
+            report += f"\n  降级状态: {stats.degradation_reason}"
+
+        return report
+
+    def get_cost_report(self) -> Dict:
+        """获取成本报告
+
+        Returns:
+            成本报告字典
+        """
+        if self.cost_controller:
+            return self.cost_controller.get_usage_report()
+        return {
+            "current_scan": {
+                "calls": self._call_count,
+                "max_calls": self.cost_config.max_calls_per_scan,
+                "cost": self._current_stats.total_cost,
+                "max_budget": 2.0,
+                "call_usage_percent": 0.0,
+                "budget_usage_percent": 0.0
+            },
+            "alert_level": "normal",
+            "is_degraded": self._current_stats.is_degraded,
+            "degradation_reason": self._current_stats.degradation_reason
+        }
+
+    def get_cost_summary(self) -> str:
+        """获取成本摘要（用于UI显示）"""
+        report = self.get_cost_report()
+        scan = report["current_scan"]
+
+        if report["is_degraded"]:
+            status = f"[已降级] {report['degradation_reason']}"
+        else:
+            status = "正常"
+
+        return (
+            f"{status} | "
+            f"调用: {scan['calls']}/{scan['max_calls']} | "
+            f"成本: ${scan['cost']:.3f}/${scan['max_budget']:.2f}"
         )
 
     def reset_call_count(self):
@@ -482,21 +621,80 @@ class AIAnalyzer:
             config: 成本控制配置
         """
         self.cost_config = config
+
+        # 如果有成本控制器，更新它
+        if self.cost_controller:
+            cc_config = CostConfig(
+                mode=CCMode(config.mode.value),
+                max_calls_per_scan=config.max_calls_per_scan,
+                fallback_to_rules=config.fallback_to_rules
+            )
+            self.cost_controller.update_config(cc_config)
+
         self.logger.info(f"[AI_ANALYZER] 成本控制配置已更新: {config.mode.value}")
+
+    def set_cost_controller(self, controller: CostController):
+        """设置成本控制器
+
+        Args:
+            controller: 成本控制器
+        """
+        self.cost_controller = controller
+        self.logger.info("[AI_ANALYZER] 成本控制器已设置")
 
 
 # 便利函数
 def get_ai_analyzer(
     ai_config: Optional[AIConfig] = None,
-    cost_config: Optional[CostControlConfig] = None
+    cost_config: Optional[CostControlConfig] = None,
+    cost_controller: Optional[CostController] = None
 ) -> AIAnalyzer:
     """获取AI分析器实例
 
     Args:
         ai_config: AI配置
         cost_config: 成本控制配置
+        cost_controller: 成本控制器
 
     Returns:
         AIAnalyzer 实例
     """
-    return AIAnalyzer(ai_config, cost_config)
+    return AIAnalyzer(ai_config, cost_config, cost_controller)
+
+
+def create_ai_analyzer_with_cost_control(
+    api_key: str = "",
+    max_calls: int = 100,
+    max_budget: float = 2.0,
+    mode: str = "fallback"
+) -> AIAnalyzer:
+    """创建带成本控制的AI分析器
+
+    Args:
+        api_key: API密钥
+        max_calls: 最大调用次数
+        max_budget: 最大预算（USD）
+        mode: 模式 (unlimited, budget, fallback, rules_only)
+
+    Returns:
+        AIAnalyzer 实例
+    """
+    from .cost_controller import CostConfig
+
+    ai_config = AIConfig(api_key=api_key) if api_key else AIConfig()
+
+    cost_config = CostControlConfig(
+        mode=CostControlMode(mode),
+        max_calls_per_scan=max_calls,
+        fallback_to_rules=True
+    )
+
+    cc_config = CostConfig(
+        mode=CCMode(mode),
+        max_calls_per_scan=max_calls,
+        max_budget_per_scan=max_budget,
+        fallback_to_rules=True
+    )
+    cost_controller = CostController(cc_config)
+
+    return AIAnalyzer(ai_config, cost_config, cost_controller)

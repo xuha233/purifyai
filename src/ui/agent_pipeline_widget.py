@@ -4,9 +4,15 @@ AI 流水线可视化组件 - Agent Pipeline Widget
 
 展示智能体的 4 阶段执行流程：扫描 → 审查 → 执行 → 报告
 """
+
 from PyQt5.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame,
-    QProgressBar, QGraphicsOpacityEffect
+    QWidget,
+    QHBoxLayout,
+    QVBoxLayout,
+    QLabel,
+    QFrame,
+    QProgressBar,
+    QGraphicsOpacityEffect,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QColor
@@ -24,16 +30,17 @@ class PipelineStageCard(QFrame):
 
     status_changed = pyqtSignal(str, str)  # stage_name, status
 
+    _STYLES_CACHE = {}  # Class-level style cache
+
     def __init__(self, stage: str, icon: FluentIcon, parent=None):
         super().__init__(parent)
         self.stage = stage
         self.icon = icon
-        self.status = "idle"  # idle/running/completed/error/paused
+        self.status = "idle"
         self.progress = 0
         self.tool_calls = []
 
         self._init_ui()
-        self._update_style()
 
     def _init_ui(self):
         """初始化 UI"""
@@ -44,22 +51,19 @@ class PipelineStageCard(QFrame):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
 
-        # 顶部：图标和状态指示
         top_row = QHBoxLayout()
         top_row.setContentsMargins(0, 0, 0, 0)
 
-        # 图标
         icon_widget = IconWidget(self.icon)
         icon_widget.setFixedSize(24, 24)
-        icon_widget.setStyleSheet(f'color: {AgentTheme.get_stage_color(self.stage)};')
+        icon_widget.setStyleSheet(f"color: {AgentTheme.get_stage_color(self.stage)};")
         self.icon_widget = icon_widget
         top_row.addWidget(icon_widget)
 
-        # 工具调用徽章
         self.tool_badge = QLabel()
         self.tool_badge.setFixedSize(16, 16)
         self.tool_badge.setAlignment(Qt.AlignCenter)
-        self.tool_badge.setStyleSheet('''
+        self.tool_badge.setStyleSheet("""
             QLabel {
                 background: #FF6B6B;
                 color: white;
@@ -67,41 +71,28 @@ class PipelineStageCard(QFrame):
                 font-size: 9px;
                 font-weight: bold;
             }
-        ''')
+        """)
         self.tool_badge.setVisible(False)
         top_row.addWidget(self.tool_badge)
 
         top_row.addStretch()
         layout.addLayout(top_row)
 
-        # 阶段名称
         self.name_label = QLabel(AgentStage.get_name(self.stage))
-        self.name_label.setStyleSheet('font-size: 13px; font-weight: 600;')
+        self.name_label.setStyleSheet("font-size: 13px; font-weight: 600;")
         self.name_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.name_label)
 
-        # 进度条
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self.progress_bar.setFixedHeight(4)
         self.progress_bar.setTextVisible(False)
-        self.progress_bar.setStyleSheet('''
-            QProgressBar {
-                border: none;
-                background: #e0e0e0;
-                border-radius: 2px;
-            }
-            QProgressBar::chunk {
-                background: #0078D4;
-                border-radius: 2px;
-            }
-        ''')
+        self._update_progress_style("#0078D4")
         layout.addWidget(self.progress_bar)
 
-        # 状态文本
         self.status_label = QLabel("等待")
-        self.status_label.setStyleSheet('font-size: 10px; color: #999;')
+        self.status_label.setStyleSheet("font-size: 10px; color: #999;")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)
 
@@ -141,31 +132,41 @@ class PipelineStageCard(QFrame):
         self.tool_badge.setVisible(False)
 
     def _update_style(self):
-        """更新卡片样式"""
+        """更新卡片样式（使用缓存）"""
         color = AgentTheme.get_status_color(self.status)
 
-        # 更新边框和背景
-        if self.status == "idle":
-            self.setStyleSheet(f'''
-                QFrame {{
-                    background: #ffffff;
-                    border: 1px solid #e0e0e0;
-                    border-radius: 8px;
-                }}
-            ''')
-            self.status_label.setText("等待")
-        elif self.status == "running":
-            self.setStyleSheet(f'''
-                QFrame {{
-                    background: {color}15;
-                    border: 2px solid {color};
-                    border-radius: 8px;
-                }}
-            ''')
-            self.status_label.setText("进行中")
-            self.status_label.setStyleSheet(f'font-size: 10px; color: {color};')
-            # 启动进度条动画
-            self.progress_bar.setStyleSheet(f'''
+        status_map = {
+            "idle": ("#ffffff", "等待"),
+            "running": (f"{color}15", "进行中"),
+            "completed": (f"{color}10", "完成"),
+            "error": ("#fee2e2", "错误"),
+            "paused": ("#fff3cd", "已暂停"),
+        }
+
+        bg_color, status_text = status_map.get(self.status, ("#ffffff", self.status))
+        self.setStyleSheet(
+            f"""
+            QFrame {{
+                background: {bg_color};
+                border: 1px solid {color};
+                border-radius: 8px;
+            }}
+        """
+            if self.status != "idle"
+            else """
+            QFrame {
+                background: #ffffff;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+            }
+        """
+        )
+
+        self.status_label.setText(status_text)
+        self.status_label.setStyleSheet(f"font-size: 10px; color: {color};")
+
+        if self.status == "running":
+            self.progress_bar.setStyleSheet(f"""
                 QProgressBar {{
                     border: none;
                     background: #e0e0e0;
@@ -175,48 +176,26 @@ class PipelineStageCard(QFrame):
                     background: {color};
                     border-radius: 2px;
                 }}
-            ''')
+            """)
         elif self.status == "completed":
-            self.setStyleSheet(f'''
-                QFrame {{
-                    background: {color}10;
-                    border: 1px solid {color};
-                    border-radius: 8px;
-                }}
-            ''')
-            self.status_label.setText("完成")
-            self.status_label.setStyleSheet(f'font-size: 10px; color: {color};')
             self.progress_bar.setValue(100)
-        elif self.status == "error":
-            self.setStyleSheet(f'''
-                QFrame {{
-                    background: #fee2e2;
-                    border: 1px solid {color};
-                    border-radius: 8px;
-                }}
-            ''')
-            self.status_label.setText("错误")
-            self.status_label.setStyleSheet(f'font-size: 10px; color: {color};')
-        elif self.status == "paused":
-            self.setStyleSheet(f'''
-                QFrame {{
-                    background: #fff3cd;
-                    border: 1px solid {color};
-                    border-radius: 8px;
-                }}
-            ''')
-            self.status_label.setText("已暂停")
-            self.status_label.setStyleSheet(f'font-size: 10px; color: {color};')
 
 
 class ProgressConnector(QFrame):
     """阶段间连接器，带进度动画"""
 
+    _ACTIVE_STYLES = {}
+    _INACTIVE_STYLE = """
+        QFrame {
+            background: #e0e0e0;
+            border-radius: 1px;
+        }
+    """
+
     def __init__(self, color: str = "#0078D4", parent=None):
         super().__init__(parent)
         self.color = color
-        self._opacity = 0.0
-
+        self._is_active = False
         self._init_ui()
 
     def _init_ui(self):
@@ -224,7 +203,6 @@ class ProgressConnector(QFrame):
         self.setFrameStyle(QFrame.HLine | QFrame.Sunken)
         self.setFixedHeight(3)
         self.setFixedWidth(30)
-        self._opacity = 0.0
         self._update_style()
 
     def set_active(self, active: bool):
@@ -233,26 +211,22 @@ class ProgressConnector(QFrame):
         Args:
             active: 是否激活
         """
-        # 创建透明度动画
-        effect = QGraphicsOpacityEffect(self)
-        effect.setOpacity(1.0 if active else 0.2)
-        self.setGraphicsEffect(effect)
+        if active == self._is_active:
+            return
+        self._is_active = active
 
         if active:
-            self.setStyleSheet(f'''
-                QFrame {{
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                               stop:0 {self.color}40, stop:1 {self.color});
-                    border-radius: 1px;
-                }}
-            ''')
+            if self.color not in ProgressConnector._ACTIVE_STYLES:
+                ProgressConnector._ACTIVE_STYLES[self.color] = f"""
+                    QFrame {{
+                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                                   stop:0 {self.color}40, stop:1 {self.color});
+                        border-radius: 1px;
+                    }}
+                """
+            self.setStyleSheet(ProgressConnector._ACTIVE_STYLES[self.color])
         else:
-            self.setStyleSheet('''
-                QFrame {
-                    background: #e0e0e0;
-                    border-radius: 1px;
-                }
-            ''')
+            self.setStyleSheet(ProgressConnector._INACTIVE_STYLE)
 
     def _update_style(self):
         """更新样式"""
@@ -290,7 +264,7 @@ class AgentPipelineWidget(QWidget):
             (AgentStage.SCAN, FluentIcon.SEARCH),
             (AgentStage.REVIEW, FluentIcon.CHECKBOX),
             (AgentStage.CLEANUP, FluentIcon.DELETE),
-            (AgentStage.REPORT, FluentIcon.DOCUMENT)
+            (AgentStage.REPORT, FluentIcon.DOCUMENT),
         ]
 
         for stage_key, icon in stages:
@@ -398,8 +372,4 @@ class AgentPipelineWidget(QWidget):
 
 
 # 导出
-__all__ = [
-    "AgentPipelineWidget",
-    "PipelineStageCard",
-    "ProgressConnector"
-]
+__all__ = ["AgentPipelineWidget", "PipelineStageCard", "ProgressConnector"]

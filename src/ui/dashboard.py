@@ -375,7 +375,7 @@ class DashboardPage(QWidget):
 
         layout.addStretch()
 
-        arrow = IconWidget(FluentIcon.CHEVRIR_RIGHT)
+        arrow = IconWidget(FluentIcon.CHEVRON_RIGHT)
         arrow.setFixedSize(14, 14)
         arrow.setStyleSheet('color: white; opacity: 0.8;')
         layout.addWidget(arrow)

@@ -4,23 +4,45 @@
 
 智能体系统的核心控制中心，统一管理所有 AI 清理任务
 """
+
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QScrollArea, QSplitter, QStackedWidget
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QFrame,
+    QScrollArea,
+    QSplitter,
+    QStackedWidget,
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 
 from qfluentwidgets import (
-    StrongBodyLabel, SubtitleLabel, BodyLabel, SimpleCardWidget,
-    PushButton, PrimaryPushButton, FluentIcon, IconWidget,
-    InfoBar, InfoBarPosition, ScrollArea
+    StrongBodyLabel,
+    SubtitleLabel,
+    BodyLabel,
+    SimpleCardWidget,
+    PushButton,
+    PrimaryPushButton,
+    FluentIcon,
+    IconWidget,
+    InfoBar,
+    InfoBarPosition,
+    ScrollArea,
 )
 
 from .agent_status_widgets import AgentStatusFrame, AgentStatsWidget
 from .agent_pipeline_widget import AgentPipelineWidget
 from .agent_thinking_stream import ThinkingStreamWidget
 from .agent_control_panel import AgentControlPanel
-from .agent_widgets import TaskCard, AgentStatCard, ToolLoggerWidget, ItemListCard
+from .agent_widgets import (
+    TaskCard,
+    AgentStatCard,
+    ToolLoggerWidget,
+    ItemListCard,
+    ErrorDisplayWidget,
+    ErrorDetailsDialog,
+)
 from .agent_theme import AgentTheme, AgentStage, AgentStatus
 from utils.logger import get_logger
 
@@ -57,50 +79,48 @@ class AgentHubPage(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.state = "idle"  # idle, scanning, analyzing, paused, completed, error
+        self.state = "idle"
         self.timer = QTimer()
+        self.last_error = None
+        self._initialized = False
+        self._deferred_widgets = {}
 
-        self._init_ui()
-        self._connect_signals()
-
+        self._init_critical_ui()
+        self._connect_critical_signals()
+        QTimer.singleShot(0, self._init_deferred_ui)
         logger.info("[AgentHub] 智能体中心页面初始化完成")
 
-    def _init_ui(self):
-        """初始化 UI"""
+    def _init_critical_ui(self):
+        """初始化关键UI - 页面切换最关键的部分"""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # ========== 顶部标题栏 ==========
         self._create_header()
         main_layout.addWidget(self.header_widget)
 
-        # ========== 滚动内容区域 ==========
         scroll_area = ScrollArea(self)
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll_area.setStyleSheet('''
+        scroll_area.setStyleSheet("""
             ScrollArea {
                 border: none;
                 background: transparent;
             }
-        ''')
+        """)
 
         content_widget = QWidget()
         content_layout = QVBoxLayout(content_widget)
         content_layout.setContentsMargins(16, 12, 16, 12)
         content_layout.setSpacing(12)
 
-        # ========== 第一行：状态 + 任务控制 + 统计 ==========
         top_row_layout = QHBoxLayout()
         top_row_layout.setSpacing(12)
 
-        # 智能体状态卡片
         self.status_card = AgentStatusFrame()
         self.status_card.setFixedHeight(120)
         top_row_layout.addWidget(self.status_card)
 
-        # 任务控制面板
         self.task_panel = SimpleCardWidget()
         self.task_panel.setMinimumWidth(260)
         self.task_panel.setMaximumWidth(300)
@@ -108,7 +128,7 @@ class AgentHubPage(QWidget):
         task_panel_layout.setContentsMargins(12, 12, 12, 12)
 
         task_title = SubtitleLabel("任务控制")
-        task_title.setStyleSheet('font-size: 14px;')
+        task_title.setStyleSheet("font-size: 14px;")
         task_panel_layout.addWidget(task_title)
 
         self.task_card = TaskCard()
@@ -117,7 +137,6 @@ class AgentHubPage(QWidget):
 
         top_row_layout.addWidget(self.task_panel)
 
-        # 统计面板
         self.stats_panel = SimpleCardWidget()
         self.stats_panel.setMinimumWidth(240)
         self.stats_panel.setMaximumWidth(280)
@@ -126,33 +145,28 @@ class AgentHubPage(QWidget):
         stats_layout.setSpacing(8)
 
         stats_title = SubtitleLabel("统计概览")
-        stats_title.setStyleSheet('font-size: 14px;')
+        stats_title.setStyleSheet("font-size: 14px;")
         stats_layout.addWidget(stats_title)
 
-        # 统计卡片
         stats_grid = QVBoxLayout()
 
         self.scans_card = AgentStatCard(
-            "0", "扫描次数", FluentIcon.HISTORY,
-            AgentTheme.SCAN_COLOR
+            "0", "扫描次数", FluentIcon.HISTORY, AgentTheme.SCAN_COLOR
         )
         stats_grid.addWidget(self.scans_card)
 
         self.ai_calls_card = AgentStatCard(
-            "0", "AI 调用", FluentIcon.ROBOT,
-            AgentTheme.REPORT_COLOR
+            "0", "AI 调用", FluentIcon.ROBOT, AgentTheme.REPORT_COLOR
         )
         stats_grid.addWidget(self.ai_calls_card)
 
         self.files_card = AgentStatCard(
-            "0", "清理文件", FluentIcon.DELETE,
-            AgentTheme.CLEANUP_COLOR
+            "0", "清理文件", FluentIcon.DELETE, AgentTheme.CLEANUP_COLOR
         )
         stats_grid.addWidget(self.files_card)
 
         self.space_card = AgentStatCard(
-            "0 MB", "释放空间", FluentIcon.SAVE,
-            AgentTheme.PRIMARY
+            "0 MB", "释放空间", FluentIcon.SAVE, AgentTheme.PRIMARY
         )
         stats_grid.addWidget(self.space_card)
 
@@ -163,17 +177,79 @@ class AgentHubPage(QWidget):
 
         content_layout.addLayout(top_row_layout)
 
-        # ========== AI Pipeline 区域 ==========
-        self._create_pipeline_area(content_layout)
+        pipeline_placeholder = QWidget()
+        pipeline_layout = QVBoxLayout(pipeline_placeholder)
+        self._deferred_widgets["pipeline_container"] = pipeline_placeholder
+        content_layout.addWidget(pipeline_placeholder)
 
-        # ========== 分割线 ==========
         content_layout.addWidget(self._create_separator())
 
-        # ========== 主体区域：左侧思考流 + 右侧项目列表 ==========
         split_layout = QHBoxLayout()
         split_layout.setSpacing(12)
 
-        # 左侧：思考流
+        left_placeholder = QWidget()
+        left_placeholder.setMinimumWidth(350)
+        left_placeholder.setMaximumWidth(450)
+        self._deferred_widgets["left_panel"] = left_placeholder
+        split_layout.addWidget(left_placeholder)
+
+        right_placeholder = QWidget()
+        self._deferred_widgets["right_panel"] = right_placeholder
+        split_layout.addWidget(right_placeholder, stretch=1)
+
+        content_layout.addLayout(split_layout, stretch=1)
+
+        tool_placeholder = QWidget()
+        tool_layout = QVBoxLayout(tool_placeholder)
+        self._deferred_widgets["tool_container"] = tool_placeholder
+        content_layout.addWidget(tool_placeholder)
+
+        self._create_status_bar(content_layout)
+
+        content_layout.addStretch()
+
+        scroll_area.setWidget(content_widget)
+        main_layout.addWidget(scroll_area, stretch=1)
+
+    def _init_deferred_ui(self):
+        """延迟初始化次要UI组件"""
+        if self._initialized:
+            return
+
+        self._create_pipeline_area()
+        self._create_left_panel()
+        self._create_right_panel()
+        self._create_tool_logger_area()
+        self._connect_deferred_signals()
+        self._initialized = True
+
+    def _create_pipeline_area(self):
+        """创建 AI Pipeline 区域"""
+        pipeline_container = SimpleCardWidget()
+        pipeline_layout = QVBoxLayout(pipeline_container)
+        pipeline_layout.setContentsMargins(16, 12, 16, 12)
+        pipeline_layout.setSpacing(8)
+
+        title = StrongBodyLabel("AI 执行流程")
+        title.setStyleSheet("font-size: 13px; color: #666;")
+        pipeline_layout.addWidget(title)
+
+        self.pipeline = AgentPipelineWidget()
+        pipeline_layout.addWidget(self.pipeline)
+
+        self.overall_progress = QLabel("总体进度: 0%")
+        self.overall_progress.setStyleSheet(
+            "font-size: 11px; color: #999; text-align: right;"
+        )
+        self.overall_progress.setAlignment(Qt.AlignRight)
+        pipeline_layout.addWidget(self.overall_progress)
+
+        old_container = self._deferred_widgets["pipeline_container"]
+        old_layout = old_container.layout()
+        old_layout.addWidget(pipeline_container)
+
+    def _create_left_panel(self):
+        """创建左侧面板"""
         left_panel = SimpleCardWidget()
         left_panel.setMinimumWidth(350)
         left_panel.setMaximumWidth(450)
@@ -187,9 +263,15 @@ class AgentHubPage(QWidget):
         self.thinking_stream = ThinkingStreamWidget()
         left_layout.addWidget(self.thinking_stream)
 
-        split_layout.addWidget(left_panel)
+        old_panel = self._deferred_widgets["left_panel"]
+        old_layout = old_panel.parent().layout()
+        idx = old_layout.indexOf(old_panel)
+        old_layout.removeWidget(old_panel)
+        old_panel.deleteLater()
+        old_layout.insertWidget(idx, left_panel)
 
-        # 右侧：项目列表
+    def _create_right_panel(self):
+        """创建右侧面板"""
         right_panel = SimpleCardWidget()
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
@@ -201,20 +283,30 @@ class AgentHubPage(QWidget):
         self.item_list = ItemListCard()
         right_layout.addWidget(self.item_list)
 
-        split_layout.addWidget(right_panel, stretch=1)
+        old_panel = self._deferred_widgets["right_panel"]
+        old_layout = old_panel.parent().layout()
+        idx = old_layout.indexOf(old_panel)
+        old_layout.removeWidget(old_panel)
+        old_panel.deleteLater()
+        old_layout.insertWidget(idx, right_panel)
 
-        content_layout.addLayout(split_layout, stretch=1)
+    def _create_tool_logger_area(self):
+        """创建工具调用日志区域"""
+        tool_container = SimpleCardWidget()
+        tool_layout = QVBoxLayout(tool_container)
+        tool_layout.setContentsMargins(16, 12, 16, 12)
+        tool_layout.setSpacing(8)
 
-        # ========== 工具调用日志 ==========
-        self._create_tool_logger_area(content_layout)
+        title = StrongBodyLabel("工具调用日志")
+        title.setStyleSheet("font-size: 13px; color: #666;")
+        tool_layout.addWidget(title)
 
-        # ========== 底部状态栏 ==========
-        self._create_status_bar(content_layout)
+        self.tool_logger = ToolLoggerWidget()
+        tool_layout.addWidget(self.tool_logger)
 
-        content_layout.addStretch()
-
-        scroll_area.setWidget(content_widget)
-        main_layout.addWidget(scroll_area, stretch=1)
+        old_container = self._deferred_widgets["tool_container"]
+        old_layout = old_container.layout()
+        old_layout.addWidget(tool_container)
 
     def _create_header(self):
         """创建顶部标题栏"""
@@ -227,17 +319,21 @@ class AgentHubPage(QWidget):
         # Logo 和标题
         icon_widget = IconWidget(FluentIcon.GLOBE)
         icon_widget.setFixedSize(28, 28)
-        icon_widget.setStyleSheet('color: #0078D4;')
+        icon_widget.setStyleSheet("color: #0078D4;")
         header_layout.addWidget(icon_widget)
 
-        title = StrongBodyLabel('智能体中心')
-        title.setStyleSheet('font-size: 20px; color: #2c2c2c;')
+        title = StrongBodyLabel("智能体中心")
+        title.setStyleSheet("font-size: 20px; color: #2c2c2c;")
         header_layout.addWidget(title)
 
         # AI 状态指示
+        ai_status_icon = IconWidget(FluentIcon.ACCEPT)
+        ai_status_icon.setFixedSize(16, 16)
+        ai_status_icon.setStyleSheet("color: #52C41A;")
+        header_layout.addWidget(ai_status_icon)
+
         ai_status = BodyLabel("AI 系统: 就绪")
-        ai_status.setIcon(FluentIcon.ACCEPT, FluentIcon.VIEW)
-        ai_status.setStyleSheet('color: #52C41A; font-size: 13px;')
+        ai_status.setStyleSheet("color: #52C41A; font-size: 13px;")
         header_layout.addWidget(ai_status)
 
         header_layout.addStretch()
@@ -258,68 +354,38 @@ class AgentHubPage(QWidget):
         execute_btn.setFixedHeight(36)
         header_layout.addWidget(execute_btn)
 
-    def _create_pipeline_area(self, parent_layout):
-        """创建 AI Pipeline 区域"""
-        pipeline_container = SimpleCardWidget()
-        pipeline_layout = QVBoxLayout(pipeline_container)
-        pipeline_layout.setContentsMargins(16, 12, 16, 12)
-        pipeline_layout.setSpacing(8)
+    def _connect_critical_signals(self):
+        """连接关键信号（初始化时立即连接）"""
+        self.task_card.action_requested.connect(self._on_task_action)
+        self.status_card.status_changed.connect(self._on_status_changed)
 
-        # 标题
-        title = StrongBodyLabel("AI 执行流程")
-        title.setStyleSheet('font-size: 13px; color: #666;')
-        pipeline_layout.addWidget(title)
-
-        # Pipeline 组件
-        self.pipeline = AgentPipelineWidget()
-        pipeline_layout.addWidget(self.pipeline)
-
-        # 通用进度条
-        self.overall_progress = QLabel("总体进度: 0%")
-        self.overall_progress.setStyleSheet('font-size: 11px; color: #999; text-align: right;')
-        self.overall_progress.setAlignment(Qt.AlignRight)
-        pipeline_layout.addWidget(self.overall_progress)
-
-        parent_layout.addWidget(pipeline_container)
-
-    def _create_tool_logger_area(self, parent_layout):
-        """创建工具调用日志区域"""
-        tool_container = SimpleCardWidget()
-        tool_layout = QVBoxLayout(tool_container)
-        tool_layout.setContentsMargins(16, 12, 16, 12)
-        tool_layout.setSpacing(8)
-
-        # 标题
-        title = StrongBodyLabel("工具调用日志")
-        title.setStyleSheet('font-size: 13px; color: #666;')
-        tool_layout.addWidget(title)
-
-        # 工具日志组件
-        self.tool_logger = ToolLoggerWidget()
-        tool_layout.addWidget(self.tool_logger)
-
-        parent_layout.addWidget(tool_container)
+    def _connect_deferred_signals(self):
+        """连接延迟的信号（在延迟初始化后调用）"""
+        self.pipeline.stage_changed.connect(self._on_pipeline_stage_changed)
+        self.pipeline.progress_updated.connect(self._on_pipeline_progress_updated)
+        self.pipeline.tool_called.connect(self._on_pipeline_tool_called)
+        self.thinking_stream.tool_executed.connect(self._on_tool_executed)
 
     def _create_panel_header(self, title: str, icon: FluentIcon) -> QWidget:
         """创建面板头部"""
         header = QWidget()
         header.setFixedHeight(40)
-        header.setStyleSheet('''
+        header.setStyleSheet("""
             QWidget {
                 background: #f5f5f5;
                 border-bottom: 1px solid #e0e0e0;
             }
-        ''')
+        """)
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(12, 0, 12, 0)
 
         icon_widget = IconWidget(icon)
         icon_widget.setFixedSize(16, 16)
-        icon_widget.setStyleSheet('color: #666;')
+        icon_widget.setStyleSheet("color: #666;")
         header_layout.addWidget(icon_widget)
 
         label = StrongBodyLabel(title)
-        label.setStyleSheet('font-size: 12px;')
+        label.setStyleSheet("font-size: 12px;")
         header_layout.addWidget(label)
 
         header_layout.addStretch()
@@ -331,56 +397,172 @@ class AgentHubPage(QWidget):
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
-        line.setStyleSheet('background: #e0e0e0;')
+        line.setStyleSheet("background: #e0e0e0;")
         return line
 
     def _create_status_bar(self, parent_layout):
         """创建底部状态栏"""
         status_bar = QWidget()
         status_bar.setFixedHeight(36)
-        status_bar.setStyleSheet('''
+        status_bar.setStyleSheet("""
             QWidget {
                 background: #f8f9fa;
                 border-top: 1px solid #e0e0e0;
             }
-        ''')
+        """)
 
         status_layout = QHBoxLayout(status_bar)
         status_layout.setContentsMargins(16, 0, 16, 0)
 
         self.status_text = BodyLabel("准备就绪")
-        self.status_text.setStyleSheet('font-size: 11px; color: #666;')
+        self.status_text.setStyleSheet("font-size: 11px; color: #666;")
         status_layout.addWidget(self.status_text)
 
         # 会话信息
         session_label = BodyLabel("会话: 未创建")
-        session_label.setStyleSheet('font-size: 11px; color: #999;')
+        session_label.setStyleSheet("font-size: 11px; color: #999;")
         status_layout.addWidget(session_label)
 
         status_layout.addStretch()
 
         # 执行时间
         self.time_label = BodyLabel("耗时: 00:00")
-        self.time_label.setStyleSheet('font-size: 11px; color: #999;')
+        self.time_label.setStyleSheet("font-size: 11px; color: #999;")
         status_layout.addWidget(self.time_label)
 
         parent_layout.addWidget(status_bar)
 
-    def _connect_signals(self):
-        """连接信号"""
-        # Pipeline 信号
-        self.pipeline.stage_changed.connect(self._on_pipeline_stage_changed)
-        self.pipeline.progress_updated.connect(self._on_pipeline_progress_updated)
-        self.pipeline.tool_called.connect(self._on_pipeline_tool_called)
+    # ========== 错误处理 ==========
 
-        # Task Card 信号
-        self.task_card.action_requested.connect(self._on_task_action)
+    def show_error(
+        self,
+        title: str,
+        message: str,
+        error_code: str = "",
+        suggestions: list = None,
+        recoverable: bool = True,
+    ):
+        """显示错误信息
 
-        # Status Card 信号
-        self.status_card.status_changed.connect(self._on_status_changed)
+        Args:
+            title: 错误标题
+            message: 错误消息
+            error_code: 错误代码
+            suggestions: 建议操作列表
+            recoverable: 是否可恢复
+        """
+        # 保存最后错误
+        self.last_error = {
+            "title": title,
+            "message": message,
+            "error_code": error_code,
+            "suggestions": suggestions or [],
+            "recoverable": recoverable,
+        }
 
-        # Thinking Stream 信号
-        self.thinking_stream.tool_executed.connect(self._on_tool_executed)
+        # 更新任务卡片状态
+        self.task_card.set_task_status("error", 0, f"错误: {title}")
+
+        # 更新状态卡片
+        self.status_card.update_status(AgentStatus.ERROR, title)
+
+        logger.warning(f"[AgentHub] 显示错误: [{error_code}] {title} - {message}")
+
+    def show_error_from_exception(self, exc: Exception, context: dict = None):
+        """从异常对象显示错误
+
+        Args:
+            exc: 异常对象
+            context: 上下文信息
+        """
+        try:
+            # 尝试导入异常处理模块
+            from agent.exceptions import unwrap_agent_exception, format_error_for_user
+
+            agent_exc = unwrap_agent_exception(exc)
+
+            if agent_exc:
+                title = agent_exc.code.name.replace("_", " ")
+                message = agent_exc.message
+                error_code = agent_exc.code.value
+                suggestions = agent_exc.context.additional_data.get("suggestions", [])
+                recoverable = agent_exc.recoverable
+
+                self.show_error(title, message, error_code, suggestions, recoverable)
+            else:
+                self.show_error(
+                    "发生错误", str(exc), "E0000", ["请检查日志获取详细信息"], False
+                )
+
+        except ImportError:
+            # 如果异常模块不可用，使用通用错误处理
+            self.show_error(
+                "发生错误", str(exc), "E0000", ["请检查日志获取详细信息"], False
+            )
+
+    def clear_error(self):
+        """清除错误状态"""
+        self.last_error = None
+        self.task_card.set_task_status("idle", 0, "准备就绪")
+        self.status_card.update_status(AgentStatus.READY, "就绪")
+
+    def _create_error_display_area(self, parent_layout):
+        """创建错误显示区域
+
+        Args:
+            parent_layout: 父布局
+        """
+        self.error_display = ErrorDisplayWidget()
+        self.error_display.setFixedHeight(0)  # 初始隐藏
+        self.error_display.setStyleSheet(
+            self.error_display.styleSheet()
+            + """
+            ErrorDisplayWidget {
+                margin: 8px 0;
+            }
+        """
+        )
+        parent_layout.addWidget(self.error_display)
+
+        # 连接信号
+        self.error_display.retry_requested.connect(self._on_retry_error)
+        self.error_display.details_requested.connect(self._on_show_error_details)
+        self.error_display.dismissed.connect(self._on_dismiss_error)
+
+    def _on_retry_error(self):
+        """重试错误操作"""
+        if self.last_error and self.last_error.get("recoverable", False):
+            logger.info("[AgentHub] 用户请求重试错误操作")
+            # 触发任务重试
+            self.task_card.action_requested.emit("start")
+
+    def _on_show_error_details(self):
+        """显示错误详情"""
+        if self.last_error:
+            self._show_error_details_dialog(self.last_error)
+
+    def _on_dismiss_error(self):
+        """关闭错误显示"""
+        self.error_display.setFixedHeight(0)
+
+    def _show_error_details_dialog(self, error_info: dict):
+        """显示错误详情对话框
+
+        Args:
+            error_info: 错误信息字典
+        """
+        if not hasattr(self, "_error_details_dialog"):
+            self._error_details_dialog = ErrorDetailsDialog(self)
+
+        dialog = self._error_details_dialog
+        dialog.set_error_details(
+            error_code=error_info.get("error_code", "E0000"),
+            error_type="AgentException",
+            error_message=error_info.get("message", "未知错误"),
+            stack_trace="",  # 可以从异常中获取
+            suggestions=error_info.get("suggestions", []),
+        )
+        dialog.show()
 
     # ========== 信号处理 ==========
 
@@ -392,7 +574,9 @@ class AgentHubPage(QWidget):
 
     def _on_pipeline_progress_updated(self, stage: str, percent: int):
         """Pipeline 进度更新"""
-        self.overall_progress.setText(f"总体进度: {self._pipeline_stages_to_overall_progress()}%")
+        self.overall_progress.setText(
+            f"总体进度: {self._pipeline_stages_to_overall_progress()}%"
+        )
 
     def _pipeline_stages_to_overall_progress(self) -> int:
         """将各阶段进度转换为总体进度"""
@@ -448,7 +632,7 @@ class AgentHubPage(QWidget):
             content="启动 AI 审查流程...",
             parent=self,
             position=InfoBarPosition.TOP,
-            duration=2000
+            duration=2000,
         )
         # 设置 pipeline 到审查阶段
         self.pipeline.set_stage_status(AgentStage.REVIEW, "running")
@@ -460,7 +644,7 @@ class AgentHubPage(QWidget):
             content="启动清理流程...",
             parent=self,
             position=InfoBarPosition.TOP,
-            duration=2000
+            duration=2000,
         )
         self.pipeline.set_stage_status(AgentStage.CLEANUP, "running")
 
@@ -491,23 +675,39 @@ class AgentHubPage(QWidget):
     def _update_stats(self, stats: dict):
         """更新统计信息"""
         if "scans" in stats:
-            current = int(self.scans_card.findChild(StrongBodyLabel).text())
-            self.scans_card.update_value(str(current + 1))
+            val = self.scans_card.findChild(StrongBodyLabel)
+            if val:
+                try:
+                    current = int(val.text())
+                    self.scans_card.update_value(str(current + 1))
+                except ValueError:
+                    self.scans_card.update_value("1")
 
         if "ai_calls" in stats:
-            current = int(self.ai_calls_card.findChild(StrongBodyLabel).text())
-            self.ai_calls_card.update_value(str(current + 1))
+            val = self.ai_calls_card.findChild(StrongBodyLabel)
+            if val:
+                text = val.text()
+                try:
+                    current = int(text)
+                    self.ai_calls_card.update_value(str(current + 1))
+                except ValueError:
+                    self.ai_calls_card.update_value("1")
 
         if "files" in stats:
-            current = int(self.files_card.findChild(StrongBodyLabel).text())
-            self.files_card.update_value(str(current + 1))
+            val = self.files_card.findChild(StrongBodyLabel)
+            if val:
+                try:
+                    current = int(val.text())
+                    self.files_card.update_value(str(current + 1))
+                except ValueError:
+                    self.files_card.update_value("1")
 
         if "space" in stats:
             self.space_card.update_value(self._format_size(stats["space"]))
 
     def _format_size(self, size: int) -> str:
         """格式化大小"""
-        for unit in ['B', 'KB', 'MB', 'GB']:
+        for unit in ["B", "KB", "MB", "GB"]:
             if size < 1024:
                 return f"{size:.1f} {unit}"
             size /= 1024
@@ -516,23 +716,34 @@ class AgentHubPage(QWidget):
     def _start_task(self):
         """开始任务"""
         self.state = "running"
-        self.status_card.set_status("running", stage="扫描中", progress=0, details="正在初始化...")
+        self.status_card.set_status(
+            "running", stage="扫描中", progress=0, details="正在初始化..."
+        )
         self.task_card.set_task_status("running", 0, "正在执行...")
-        self.pipeline.set_stage_status(AgentStage.SCAN, "running")
-
-        # 模拟进度
+        if hasattr(self, "pipeline"):
+            self.pipeline.set_stage_status(AgentStage.SCAN, "running")
         self._simulate_progress()
 
     def _pause_task(self):
         """暂停任务"""
         self.state = "paused"
-        self.status_card.set_status("running", stage="已暂停", progress=self.pipeline.stages[AgentStage.SCAN].progress, details="任务已暂停")
+        self.status_card.set_status(
+            "running",
+            stage="已暂停",
+            progress=self.pipeline.stages[AgentStage.SCAN].progress,
+            details="任务已暂停",
+        )
         self.task_card.set_task_status("paused")
 
     def _resume_task(self):
         """恢复任务"""
         self.state = "running"
-        self.status_card.set_status("running", stage="执行中", progress=self.pipeline.stages[AgentStage.SCAN].progress, details="继续执行...")
+        self.status_card.set_status(
+            "running",
+            stage="执行中",
+            progress=self.pipeline.stages[AgentStage.SCAN].progress,
+            details="继续执行...",
+        )
         self.task_card.set_task_status("running")
 
     def _stop_task(self):
@@ -540,7 +751,8 @@ class AgentHubPage(QWidget):
         self.state = "idle"
         self.status_card.set_status("idle")
         self.task_card.set_task_status("idle")
-        self.pipeline.reset_all_stages()
+        if hasattr(self, "pipeline"):
+            self.pipeline.reset_all_stages()
         self._update_status_text("准备就绪")
 
     def _simulate_progress(self):
@@ -549,28 +761,31 @@ class AgentHubPage(QWidget):
             return
 
         import random
+
         stage = random.choice(list(AgentStage.get_all_stages()))
         progress = random.randint(0, 100)
 
-        self.pipeline.update_progress(stage, progress)
+        if hasattr(self, "pipeline"):
+            self.pipeline.update_progress(stage, progress)
 
-        # 继续模拟
         if self.state == "running":
             QTimer.singleShot(500, self._simulate_progress)
 
     def reset(self):
         """重置所有状态"""
         self.state = "idle"
-        self.pipeline.reset_all_stages()
-        self.thinking_stream.clear()
-        self.tool_logger.clear()
-        self.item_list.clear()
+        if hasattr(self, "pipeline"):
+            self.pipeline.reset_all_stages()
+        if hasattr(self, "thinking_stream"):
+            self.thinking_stream.clear()
+        if hasattr(self, "tool_logger"):
+            self.tool_logger.clear()
+        if hasattr(self, "item_list"):
+            self.item_list.clear()
         self.task_card.set_task_status("idle")
         self.status_card.set_status("idle")
         self._update_status_text("准备就绪")
 
 
 # 导出
-__all__ = [
-    "AgentHubPage"
-]
+__all__ = ["AgentHubPage"]

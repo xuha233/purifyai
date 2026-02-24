@@ -5,16 +5,33 @@ AI 思考流显示组件 - Agent Thinking Stream
 实时显示 AI 的思考过程、工具调用和结果
 类似 ChatGPT 的对话界面
 """
+
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
-    QScrollArea, QPushButton, QSizePolicy
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QFrame,
+    QScrollArea,
+    QPushButton,
+    QSizePolicy,
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QMargins
+from PyQt5.QtCore import (
+    Qt,
+    pyqtSignal,
+    QTimer,
+    QPropertyAnimation,
+    QEasingCurve,
+    QMargins,
+)
 from PyQt5.QtGui import QFont, QColor
 
 from qfluentwidgets import (
-    FluentIcon, IconWidget, ToolButton,
-    StrongBodyLabel, BodyLabel
+    FluentIcon,
+    IconWidget,
+    ToolButton,
+    StrongBodyLabel,
+    BodyLabel,
 )
 
 from .agent_theme import AgentTheme
@@ -25,6 +42,7 @@ logger = get_logger(__name__)
 
 class MessageType:
     """消息类型"""
+
     USER = "user"
     ASSISTANT = "assistant"
     TOOL = "tool"
@@ -37,13 +55,19 @@ class MessageBubble(QFrame):
 
     copy_requested = pyqtSignal(str)  # 请求复制文本
 
-    def __init__(self, msg_type: str, content: str = "", tool_name: str = "", parent=None):
+    def __init__(
+        self, msg_type: str, content: str = "", tool_name: str = "", parent=None
+    ):
         super().__init__(parent)
         self.msg_type = msg_type
         self.content = content
         self.tool_name = tool_name
         self.collapsed = False
-        self.collapsible = msg_type in [MessageType.ASSISTANT, MessageType.TOOL, MessageType.THINKING]
+        self.collapsible = msg_type in [
+            MessageType.ASSISTANT,
+            MessageType.TOOL,
+            MessageType.THINKING,
+        ]
 
         self._init_ui()
 
@@ -95,11 +119,13 @@ class MessageBubble(QFrame):
         # 图标和标签
         icon_widget = IconWidget(icon)
         icon_widget.setFixedSize(16, 16)
-        icon_widget.setStyleSheet(f'color: {icon_color};')
+        icon_widget.setStyleSheet(f"color: {icon_color};")
         header.addWidget(icon_widget)
 
         type_label = QLabel(label_text)
-        type_label.setStyleSheet(f'font-size: 11px; color: {icon_color}; font-weight: 600;')
+        type_label.setStyleSheet(
+            f"font-size: 11px; color: {icon_color}; font-weight: 600;"
+        )
         header.addWidget(type_label)
 
         header.addStretch()
@@ -109,7 +135,7 @@ class MessageBubble(QFrame):
             self.collapse_btn = QPushButton()
             self.collapse_btn.setFixedSize(20, 20)
             self.collapse_btn.setText("▼")
-            self.collapse_btn.setStyleSheet('''
+            self.collapse_btn.setStyleSheet("""
                 QPushButton {
                     background: transparent;
                     border: none;
@@ -119,7 +145,7 @@ class MessageBubble(QFrame):
                 QPushButton:hover {
                     background: #f0f0f0;
                 }
-            ''')
+            """)
             self.collapse_btn.clicked.connect(self._toggle_collapse)
             header.addWidget(self.collapse_btn)
 
@@ -129,39 +155,39 @@ class MessageBubble(QFrame):
         if self.content:
             text_label = BodyLabel(self.content)
             text_label.setWordWrap(True)
-            text_label.setStyleSheet('font-size: 12px; color: #333; line-height: 1.6;')
+            text_label.setStyleSheet("font-size: 12px; color: #333; line-height: 1.6;")
 
             # 给工具调用结果添加特殊样式
             if self.msg_type == MessageType.TOOL:
-                self.content_widget.setStyleSheet(f'''
+                self.content_widget.setStyleSheet(f"""
                     QWidget {{
                         background: {AgentTheme.REVIEW_COLOR}10;
                         border-left: 3px solid {AgentTheme.REVIEW_COLOR};
                         border-radius: 4px;
                     }}
-                ''')
+                """)
             elif self.msg_type == MessageType.ASSISTANT:
-                self.content_widget.setStyleSheet('''
+                self.content_widget.setStyleSheet("""
                     QWidget {
                         background: #f5f5f5;
                         border-radius: 8px;
                     }
-                ''')
+                """)
             elif self.msg_type == MessageType.THINKING:
-                self.content_widget.setStyleSheet(f'''
+                self.content_widget.setStyleSheet(f"""
                     QWidget {{
                         background: {AgentTheme.REPORT_COLOR}08;
                         border-left: 3px solid {AgentTheme.REPORT_COLOR};
                         border-radius: 4px;
                     }}
-                ''')
+                """)
             else:  # USER
-                self.content_widget.setStyleSheet('''
+                self.content_widget.setStyleSheet("""
                     QWidget {
                         background: #e3f2fd;
                         border-radius: 8px;
                     }
-                ''')
+                """)
 
             self.content_layout.addWidget(text_label)
 
@@ -205,22 +231,29 @@ class MessageBubble(QFrame):
 
 
 class ThinkingStreamWidget(QWidget):
-    """AI 思考流显示组件
+    """AI 思考流显示组件 - 优化版，支持消息限制和批量更新
 
     特性:
     - 实时滚动：新消息自动滚动显示
     - 可折叠：点击展开/折叠每条消息
     - 类型区分：文本/工具调用/思考使用不同样式
+    - 性能优化：限制消息数量，批量处理更新
     """
 
-    message_added = pyqtSignal(str)  # message_type
-    tool_executed = pyqtSignal(str, str)  # tool_name, result
+    message_added = pyqtSignal(str)
+    tool_executed = pyqtSignal(str, str)
+
+    MAX_MESSAGES = 50
+    VISIBLE_THROTTLE_MS = 50
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.messages = []
         self.auto_scroll = True
-        self.auto_collapse_historical = True  # 自动折叠历史消息
+        self.auto_collapse_historical = True
+        self._scroll_throttle = QTimer()
+        self._scroll_throttle.setSingleShot(True)
+        self._scroll_throttle.timeout.connect(self._do_scroll_to_bottom)
 
         self._init_ui()
         self._setup_scroll_behavior()
@@ -231,16 +264,14 @@ class ThinkingStreamWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # 顶部控制栏
         self._create_header()
         layout.addWidget(self.header_widget)
 
-        # 滚动区域
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.scroll_area.setStyleSheet('''
+        self.scroll_area.setStyleSheet("""
             QScrollArea {
                 border: none;
                 background: transparent;
@@ -257,9 +288,8 @@ class ThinkingStreamWidget(QWidget):
             QScrollBar::handle:vertical:hover {
                 background: #a0a0a0;
             }
-        ''')
+        """)
 
-        # 消息容器
         self.messages_container = QWidget()
         self.messages_layout = QVBoxLayout(self.messages_container)
         self.messages_layout.setContentsMargins(12, 12, 12, 12)
@@ -269,7 +299,6 @@ class ThinkingStreamWidget(QWidget):
         self.scroll_area.setWidget(self.messages_container)
         layout.addWidget(self.scroll_area, stretch=1)
 
-        # 底部控制栏
         self._create_footer()
         layout.addWidget(self.footer_widget)
 
@@ -281,22 +310,19 @@ class ThinkingStreamWidget(QWidget):
         header_layout.setContentsMargins(12, 8, 12, 8)
         header_layout.setSpacing(12)
 
-        # 标题
         title = StrongBodyLabel("AI 思考过程")
-        title.setStyleSheet('font-size: 14px;')
+        title.setStyleSheet("font-size: 14px;")
         header_layout.addWidget(title)
 
         header_layout.addStretch()
 
-        # 消息计数
         self.count_label = BodyLabel("0 条消息")
-        self.count_label.setStyleSheet('color: #999; font-size: 11px;')
+        self.count_label.setStyleSheet("color: #999; font-size: 11px;")
         header_layout.addWidget(self.count_label)
 
-        # 折叠全部按钮
         self.collapse_all_btn = QPushButton("折叠全部")
         self.collapse_all_btn.setFixedSize(80, 26)
-        self.collapse_all_btn.setStyleSheet('''
+        self.collapse_all_btn.setStyleSheet("""
             QPushButton {
                 background: #f5f5f5;
                 border: none;
@@ -306,15 +332,14 @@ class ThinkingStreamWidget(QWidget):
             QPushButton:hover {
                 background: #e8e8e8;
             }
-        ''')
+        """)
         self.collapse_all_btn.clicked.connect(self._collapse_all)
         self.collapse_all_btn.setVisible(False)
         header_layout.addWidget(self.collapse_all_btn)
 
-        # 清空按钮
         self.clear_btn = QPushButton("清空")
         self.clear_btn.setFixedSize(60, 26)
-        self.clear_btn.setStyleSheet('''
+        self.clear_btn.setStyleSheet("""
             QPushButton {
                 background: #f5f5f5;
                 border: none;
@@ -324,7 +349,7 @@ class ThinkingStreamWidget(QWidget):
             QPushButton:hover {
                 background: #e8e8e8;
             }
-        ''')
+        """)
         self.clear_btn.clicked.connect(self.clear)
         header_layout.addWidget(self.clear_btn)
 
@@ -336,12 +361,11 @@ class ThinkingStreamWidget(QWidget):
         footer_layout.setContentsMargins(12, 4, 12, 8)
         footer_layout.setSpacing(8)
 
-        # 自动滚动开关
         self.auto_scroll_btn = QPushButton("自动滚动: 开")
         self.auto_scroll_btn.setCheckable(True)
         self.auto_scroll_btn.setChecked(True)
         self.auto_scroll_btn.toggled.connect(self._toggle_auto_scroll)
-        self.auto_scroll_btn.setStyleSheet('''
+        self.auto_scroll_btn.setStyleSheet("""
             QPushButton {
                 background: transparent;
                 border: 1px solid #e0e0e0;
@@ -353,16 +377,15 @@ class ThinkingStreamWidget(QWidget):
                 background: #e3f2fd;
                 border: 1px solid #0078D4;
             }
-        ''')
+        """)
         footer_layout.addWidget(self.auto_scroll_btn)
 
         footer_layout.addStretch()
 
-        # 滚动到底部按钮
         self.scroll_bottom_btn = QPushButton("↓")
         self.scroll_bottom_btn.setFixedSize(30, 24)
         self.scroll_bottom_btn.clicked.connect(self._scroll_to_bottom)
-        self.scroll_bottom_btn.setStyleSheet('''
+        self.scroll_bottom_btn.setStyleSheet("""
             QPushButton {
                 background: #0078D4;
                 color: white;
@@ -373,95 +396,69 @@ class ThinkingStreamWidget(QWidget):
             QPushButton:hover {
                 background: #005a9e;
             }
-        ''')
+        """)
         footer_layout.addWidget(self.scroll_bottom_btn)
 
     def _setup_scroll_behavior(self):
         """设置滚动行为"""
         self.scroll_area.verticalScrollBar().valueChanged.connect(self._on_scroll)
 
-    def add_user_message(self, text: str):
-        """添加用户消息
-
-        Args:
-            text: 消息文本
-        """
-        self._add_message(MessageType.USER, text)
-
-    def add_assistant_message(self, text: str):
-        """添加助手消息
-
-        Args:
-            text: 消息文本
-        """
-        self._add_message(MessageType.ASSISTANT, text)
-        self.message_added.emit(MessageType.ASSISTANT)
-
-    def add_tool_result(self, tool_name: str, result: str):
-        """添加工具执行结果
-
-        Args:
-            tool_name: 工具名称
-            result: 结果文本
-        """
-        # 截断过长的结果
-        if len(result) > 2000:
-            result = result[:2000] + "\n... (已截断)"
-
-        self._add_message(MessageType.TOOL, result, tool_name)
-        self.tool_executed.emit(tool_name, result)
-
-    def add_thinking(self, thought_text: str):
-        """添加 AI 思考内容
-
-        Args:
-            thought_text: 思考文本
-        """
-        self._add_message(MessageType.THINKING, thought_text)
-
-    def add_system_message(self, text: str):
-        """添加系统消息
-
-        Args:
-            text: 消息文本
-        """
-        self._add_message(MessageType.SYSTEM, text)
-
     def _add_message(self, msg_type: str, content: str, tool_name: str = ""):
-        """内部方法：添加消息
+        """内部方法：添加消息（带限制）"""
+        # 限制消息数量
+        while len(self.messages) >= self.MAX_MESSAGES:
+            oldest = self.messages.pop(0)
+            oldest.deleteLater()
+            self.messages_layout.removeWidget(oldest)
 
-        Args:
-            msg_type: 消息类型
-            content: 内容
-            tool_name: 工具名称（可选）
-        """
         bubble = MessageBubble(msg_type, content, tool_name)
-
-        # 插入到 stretch 之前
         count = self.messages_layout.count()
         self.messages_layout.insertWidget(count - 1, bubble)
 
         self.messages.append(bubble)
         self._update_count()
 
-        # 自动滚动到底部
         if self.auto_scroll:
-            QTimer.singleShot(50, self._scroll_to_bottom)
+            self._scroll_throttle.start(self.VISIBLE_THROTTLE_MS)
 
-        # 自动折叠历史消息
         if self.auto_collapse_historical and len(self.messages) > 5:
             self._collapse_historical()
 
-    def toggle_collapse_all(self, collapsed: bool):
-        """切换所有消息折叠状态
+    def _do_scroll_to_bottom(self):
+        """执行滚动到底部"""
+        self.scroll_area.verticalScrollBar().setValue(
+            self.scroll_area.verticalScrollBar().maximum()
+        )
 
-        Args:
-            collapsed: 是否折叠
-        """
+    def add_user_message(self, text: str):
+        """添加用户消息"""
+        self._add_message(MessageType.USER, text)
+
+    def add_assistant_message(self, text: str):
+        """添加助手消息"""
+        self._add_message(MessageType.ASSISTANT, text)
+        self.message_added.emit(MessageType.ASSISTANT)
+
+    def add_tool_result(self, tool_name: str, result: str):
+        """添加工具执行结果"""
+        if len(result) > 2000:
+            result = result[:2000] + "\n... (已截断)"
+        self._add_message(MessageType.TOOL, result, tool_name)
+        self.tool_executed.emit(tool_name, result)
+
+    def add_thinking(self, thought_text: str):
+        """添加 AI 思考内容"""
+        self._add_message(MessageType.THINKING, thought_text)
+
+    def add_system_message(self, text: str):
+        """添加系统消息"""
+        self._add_message(MessageType.SYSTEM, text)
+
+    def toggle_collapse_all(self, collapsed: bool):
+        """切换所有消息折叠状态"""
         for bubble in self.messages:
             if bubble.collapsed != collapsed:
                 bubble._toggle_collapse()
-
         self.collapse_all_btn.setText("展开全部" if collapsed else "折叠全部")
 
     def _collapse_all(self):
@@ -470,10 +467,9 @@ class ThinkingStreamWidget(QWidget):
         self.toggle_collapse_all(not currently_collapsed)
 
     def _collapse_historical(self):
-        """自动折叠历史消息（保留最近3条）"""
+        """自动折叠历史消息"""
         if len(self.messages) <= 3:
             return
-
         for i, bubble in enumerate(self.messages[:-3]):
             if not bubble.collapsed:
                 bubble._toggle_collapse()
@@ -483,7 +479,6 @@ class ThinkingStreamWidget(QWidget):
         for bubble in self.messages:
             bubble.deleteLater()
         self.messages.clear()
-
         self._update_count()
         logger.info("[ThinkingStream] 已清空消息历史")
 
@@ -491,48 +486,29 @@ class ThinkingStreamWidget(QWidget):
         """更新消息计数"""
         count = len(self.messages)
         self.count_label.setText(f"{count} 条消息")
-
-        # 根据消息数量控制按钮显示
         self.collapse_all_btn.setVisible(count > 2)
 
     def _scroll_to_bottom(self):
-        """滚动到底部"""
-        self.scroll_area.verticalScrollBar().setValue(
-            self.scroll_area.verticalScrollBar().maximum()
-        )
+        """滚动到底部（节流）"""
+        self._scroll_throttle.start(self.VISIBLE_THROTTLE_MS)
 
     def _toggle_auto_scroll(self, enabled: bool):
-        """切换自动滚动
-
-        Args:
-            enabled: 是否启用
-        """
+        """切换自动滚动"""
         self.auto_scroll = enabled
         self.auto_scroll_btn.setText(f"自动滚动: {'开' if enabled else '关'}")
-
         if enabled:
-            self._scroll_to_bottom()
+            self._do_scroll_to_bottom()
 
     def _on_scroll(self, value: int):
-        """滚动事件处理
-
-        Args:
-            value: 滚动条值
-        """
-        # 如果用户手动滚动到底部，开启自动滚动
+        """滚动事件处理"""
         max_val = self.scroll_area.verticalScrollBar().maximum()
         if max_val - value < 50:
             if not self.auto_scroll:
                 self.auto_scroll_btn.setChecked(True)
-        # 如果用户向上滚动，关闭自动滚动
         elif value < max_val - 200:
             if self.auto_scroll and max_val > 100:
                 self.auto_scroll_btn.setChecked(False)
 
 
 # 导出
-__all__ = [
-    "ThinkingStreamWidget",
-    "MessageBubble",
-    "MessageType"
-]
+__all__ = ["ThinkingStreamWidget", "MessageBubble", "MessageType"]
