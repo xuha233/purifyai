@@ -37,7 +37,7 @@ from qfluentwidgets import (
     SwitchButton,
 )
 
-from src.core.cleanup_rule import (
+from core.cleanup_rule import (
     RuleCondition,
     ConditionType,
     RuleOperator,

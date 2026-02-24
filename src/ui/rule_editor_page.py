@@ -46,15 +46,15 @@ from qfluentwidgets import (
     ScrollArea,
 )
 
-from src.core.rule_manager import RuleManager
-from src.core.cleanup_rule import (
+from core.rule_manager import RuleManager
+from core.cleanup_rule import (
     CleanupRule,
     RuleType,
     RuleAction,
     ConditionType,
     RuleOperator,
 )
-from src.ui.rule_edit_dialog import RuleEditDialog
+from ui.rule_edit_dialog import RuleEditDialog
 
 
 logger = logging.getLogger(__name__)

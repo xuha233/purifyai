@@ -48,7 +48,7 @@ from qfluentwidgets import (
     SubtitleLabel,
 )
 
-from src.core.cleanup_rule import (
+from core.cleanup_rule import (
     CleanupRule,
     RuleType,
     RuleAction,
@@ -56,10 +56,10 @@ from src.core.cleanup_rule import (
     ConditionType,
     RuleOperator,
 )
-from src.core.rule_manager import RuleManager
-from src.core.cleanup_rule import FileInfo, convert_bytes_to_size
+from core.rule_manager import RuleManager
+from core.cleanup_rule import FileInfo, convert_bytes_to_size
 
-from src.ui.components.condition_widget import ConditionWidget
+from ui.components.condition_widget import ConditionWidget
 
 
 logger = logging.getLogger(__name__)
