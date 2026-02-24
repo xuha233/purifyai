@@ -1,0 +1,51 @@
+{
+  "presets": {
+    "daily_work": {
+      "schedule_id": "daily_work_standard",
+      "name": "工作日每日清理",
+      "description": "工作日每日定时清理，适合办公环境",
+      "schedule_type": "daily",
+      "interval_days": 1,
+      "time_of_day": "18:30",
+      "min_space_threshold": 5,
+      "skip_on_battery": true,
+      "skip_on_fullscreen": false,
+      "allow_background": true
+    },
+    "weekly_home": {
+      "schedule_id": "weekly_home_optimal",
+      "name": "家庭电脑每周清理",
+      "description": "家庭电脑每周清理，适合个人使用",
+      "schedule_type": "weekly",
+      "day_of_week": 5,
+      "time_of_day": "20:00",
+      "min_space_threshold": 5,
+      "skip_on_battery": true,
+      "skip_on_fullscreen": false,
+      "allow_background": true
+    },
+    "monthly_deep": {
+      "schedule_id": "monthly_deep_clean",
+      "name": "每月深度清理",
+      "description": "每月深度清理，清理 aged 文件",
+      "schedule_type": "monthly",
+      "day_of_month": 1,
+      "time_of_day": "21:00",
+      "max_age_days": 30,
+      "min_space_threshold": 3,
+      "skip_on_battery": true,
+      "skip_on_fullscreen": true,
+      "allow_background": false
+    },
+    "idle_detect": {
+      "schedule_id": "idle_based",
+      "name": "空闲时清理",
+      "description": "检测到空闲时自动清理",
+      "schedule_type": "manual",
+      "min_space_threshold": 2,
+      "skip_on_battery": true,
+      "skip_on_fullscreen": true,
+      "allow_background": true
+    }
+  }
+}
