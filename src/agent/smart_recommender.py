@@ -90,6 +90,8 @@ class CleanupPlan:
     low_risk_count: int = 0
     recommended: bool = False
     mode: str = CleanupMode.BALANCED.value
+    is_incremental: bool = False  # 是否为增量清理
+    base_plan_id: Optional[str] = None  # 基础清理计划ID（增量清理时使用）
     created_at: datetime = field(default_factory=datetime.now)
 
     def calculate_stats(self):
@@ -310,33 +312,48 @@ class SmartRecommender:
 
         return plan
 
-    def recommend_incremental(self, since: datetime, mode: str = CleanupMode.BALANCED.value) -> CleanupPlan:
-        """增量推荐（只清理新文件）
+    def recommend_incremental(self, mode: str = CleanupMode.BALANCED.value) -> CleanupPlan:
+        """增量推荐（只清理上次清理后新增的文件）
 
         步骤：
-        1. 只扫描 since 时间后的新文件
-        2. 应用场景和模式过滤
-        3. 生成清理计划
+        1. 扫描系统并生成基础清理计划
+        2. 加载上次清理的文件列表
+        3. 过滤出新增文件（在上次清理列表中不存在的文件）
+        4. 生成清理计划
+
+        返回的 CleanupPlan 特点：
+        - items: 只包含上次清理后新增的可清理文件
+        - estimated_space: 新增文件的总大小
+        - risk_percentage/high_risk_count/等: 仅基于新增文件计算
+
+        边界情况：
+        - last_cleanup_files.json 不存在: 全部文件都是新文件
+        - 某些文件已删除: 这些文件不在扫描结果中，不影响增量逻辑
         """
         if self.profile_cache is None:
             self.profile_cache = self.build_user_profile()
 
-        plan = self.recommend(self.profile_cache, mode)
+        # 获取基础清理计划（包含所有符合条件文件）
+        base_plan = self.recommend(self.profile_cache, mode)
 
-        # 过滤出 since 时间之后的新文件
-        filtered_items = []
-        for item in plan.items:
-            try:
-                last_modified = datetime.fromtimestamp(float(item.last_modified))
-                if last_modified > since:
-                    filtered_items.append(item)
-            except Exception:
-                continue
+        # 加载上次清理的文件列表，转换为 set 提高查找效率
+        last_cleanup_files = set(self.load_last_cleanup_files())
 
-        plan.items = filtered_items
-        plan.calculate_stats()
+        # 过滤出新增文件（不在上次清理列表中的文件）
+        new_items = [item for item in base_plan.items if item.path not in last_cleanup_files]
 
-        return plan
+        # 创建增量清理计划
+        incremental_plan = CleanupPlan(
+            plan_id=str(uuid.uuid4()),
+            items=new_items,
+            mode=mode,
+            recommended=True,
+            is_incremental=True,
+            base_plan_id=base_plan.plan_id,
+        )
+        incremental_plan.calculate_stats()
+
+        return incremental_plan
 
     def filter_by_profile(self, items: List[ScanItem], profile: str) -> List[ScanItem]:
         """根据用户场景过滤文件"""
@@ -463,3 +480,41 @@ class SmartRecommender:
                 pass
 
         return None
+
+    def load_last_cleanup_files(self) -> List[str]:
+        """从 data/last_cleanup_files.json 读取上次清理的文件列表
+
+        Returns:
+            List[str]: 上次清理的文件列表，文件不存在时返回空列表
+        """
+        data_dir = os.path.join('data')
+        files_path = os.path.join(data_dir, 'last_cleanup_files.json')
+
+        if not os.path.exists(files_path):
+            return []
+
+        try:
+            with open(files_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get('files', [])
+        except Exception as e:
+            print(f"[SmartRecommender] 加载清理文件列表失败: {e}")
+            return []
+
+    def save_last_cleanup_files(self, files: List[str]) -> None:
+        """将文件列表保存到 data/last_cleanup_files.json
+
+        Args:
+            files: 要保存的文件列表
+        """
+        data_dir = os.path.join('data')
+        files_path = os.path.join(data_dir, 'last_cleanup_files.json')
+
+        # 自动创建 data 目录（如果不存在）
+        os.makedirs(data_dir, exist_ok=True)
+
+        try:
+            with open(files_path, 'w', encoding='utf-8') as f:
+                json.dump({'files': files}, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[SmartRecommender] 保存清理文件列表失败: {e}")

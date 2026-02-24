@@ -24,9 +24,14 @@ from . import exceptions as exceptions_module
 from . import recovery as recovery_module
 from . import error_logger as error_logger_module
 
-# 延迟导入循环依赖
-if TYPE_CHECKING:
-    from .integration import AgentIntegration
+# 导出健康评分模块
+from .ai_health_scorer import (
+    AIHealthScorer,
+    HealthReport,
+    HealthRecommendation,
+    HealthPriority,
+    HealthCategory
+)
 
 __all__ = [
     "AgentOrchestrator", "AgentType", "AIConfig",
@@ -37,8 +42,18 @@ __all__ = [
     # 异常处理
     "exceptions",
     "recovery",
-    "error_logger"
+    "error_logger",
+    # 健康评分
+    "AIHealthScorer",
+    "HealthReport",
+    "HealthRecommendation",
+    "HealthPriority",
+    "HealthCategory",
 ]
+
+# 延迟导入循环依赖
+if TYPE_CHECKING:
+    from .integration import AgentIntegration
 
 
 # 便利函数
