@@ -71,7 +71,12 @@ class CleanupThread(QThread):
     def run(self):
         """执行清理"""
         try:
-            report = self.orchestrator.execute_one_click_cleanup(self.mode)
+            if self.is_incremental:
+                # 执行增量清理
+                report = self.orchestrator.execute_incremental_cleanup(self.mode)
+            else:
+                # 执行完整清理
+                report = self.orchestrator.execute_one_click_cleanup(self.mode)
             self.cleanup_completed.emit(report)
         except Exception as e:
             logger.error(f"[CleanupThread] 清理失败: {e}")
@@ -325,6 +330,13 @@ class CleanupProgressWidget(SimpleCardWidget):
         self.status_icon.setVisible(False)
         self.backup_hint.setVisible(True)
 
+        # 隐藏增量清理UI
+        self.incremental_badge.setVisible(False)
+        self.incremental_hint.setVisible(False)
+        self.incremental_stats_widget.setVisible(False)
+        self.title_label.setText("清理进度")
+        self.title_icon.setIcon(FluentIcon.SYNC)
+
     def _set_running_state(self):
         """设置为运行状态"""
         self.status_icon.setVisible(True)
@@ -358,6 +370,11 @@ class CleanupProgressWidget(SimpleCardWidget):
         # 更新统计
         self.success_count_label.setText(f"成功: {report.success_items}")
         self.failed_count_label.setText(f"失败: {report.failed_items}")
+
+        # 如果是增量清理，显示额外统计信息
+        if report.is_incremental:
+            self._update_incremental_stats(report)
+
         self.details_label.setText(
             f"清理完成！释放空间: {self._format_size(report.freed_size)}"
         )
@@ -370,15 +387,59 @@ class CleanupProgressWidget(SimpleCardWidget):
         if self._can_undo(report):
             self.undo_btn.setEnabled(True)
 
+        # 根据清理类型显示不同的提示信息
+        if report.is_incremental:
+            content = (
+                f"增量清理完成！新增 {report.success_items} 个文件，"
+                f"跳过 {report.skipped_files_count} 个已处理文件，"
+                f"释放 {self._format_size(report.freed_size)}"
+            )
+        else:
+            content = f"成功清理 {report.success_items} 个文件，释放 {self._format_size(report.freed_size)}"
+
         InfoBar.success(
             title="清理完成",
-            content=f"成功清理 {report.success_items} 个文件，释放 {self._format_size(report.freed_size)}",
+            content=content,
             parent=self,
             position=InfoBarPosition.TOP,
             duration=3000,
         )
 
         logger.info(f"[CleanupProgress] 清理完成: {report.report_id}")
+
+    def _update_incremental_stats(self, report: CleanupReport):
+        """更新增量清理统计信息
+
+        Args:
+            report: 清理报告
+        """
+        if not report.is_incremental:
+            return
+
+        # 更新增量文件统计
+        self.new_files_label.setText(f"新增文件: {report.new_files_count}")
+        self.skipped_files_label.setText(f"跳过文件: {report.skipped_files_count}")
+
+        # 更新速度提升统计
+        if report.speed_improvement > 0:
+            self.speed_improvement_label.setText(
+                f"速度提升: {report.speed_improvement:.1f}%"
+            )
+        else:
+            self.speed_improvement_label.setText("")
+
+        # 上次清理时间
+        if report.last_cleanup_time:
+            time_diff = datetime.now() - report.last_cleanup_time
+            if time_diff.days > 0:
+                time_str = f"{time_diff.days} 天前"
+            else:
+                time_str = f"{int(time_diff.seconds / 3600)} 小时前"
+            self.details_label.setText(
+                f"上次清理: {time_str} | "
+                f"新增文件: {report.new_files_count} 个 | "
+                f"释放: {self._format_size(report.freed_size)}"
+            )
 
     def _on_cleanup_failed(self, error_message: str):
         """清理失败"""
