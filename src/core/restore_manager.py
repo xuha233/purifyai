@@ -416,7 +416,7 @@ class RestoreManager(QObject):
             # 返回全部历史（倒序）
             return reversed(self._undo_history)
 
-    def check_undo_validity(cleanup_report: Any) -> bool:
+    def check_undo_validity(self, cleanup_report: Any) -> bool:
         """检查清理报告是否可撤销
 
         Args:
@@ -433,6 +433,23 @@ class RestoreManager(QObject):
         time_since_cleanup = datetime.now() - cleanup_report.completed_at
         return time_since_cleanup.days < 30
 
+    def can_undo_cleanup(self, cleanup_report_id: str) -> bool:
+        """检查清理报告是否可撤销（通过报告ID）
+
+        Args:
+            cleanup_report_id: 清理报告 ID
+
+        Returns:
+            bool 是否可撤销
+        """
+        history_list = self.get_undo_history(cleanup_report_id)
+
+        if not history_list:
+            return False
+
+        history = history_list[0] if isinstance(history_list, list) else list(history_list)[0]
+        return history.can_undo and history.status == "available"
+
     def _get_backup_info(self, backup_id: str) -> Optional[BackupInfo]:
         """获取备份信息（从 BackupManager）
 
@@ -448,3 +465,31 @@ class RestoreManager(QObject):
             # 从数据库查询
             backup_info = self.backup_manager._get_backup_info(backup_id)
         return backup_info
+
+    def get_restore_session(self, session_id: str) -> Optional[RestoreSession]:
+        """获取恢复会话
+
+        Args:
+            session_id: 会话 ID
+
+        Returns:
+            RestoreSession 或 None
+        """
+        return self._sessions.get(session_id)
+
+    def update_undo_status(self, cleanup_report_id: str, undone: bool = True):
+        """更新撤销状态
+
+        Args:
+            cleanup_report_id: 清理报告 ID
+            undone: 是否已撤销
+        """
+        for history in self._undo_history:
+            if history.cleanup_report_id == cleanup_report_id:
+                history.status = "undone" if undone else "available"
+                history.undo_time = datetime.now() if undone else None
+                history.can_undo = not undone
+                break
+
+        self._save_undo_history()
+        self.logger.info(f"[RESTORE] 更新撤销状态: {cleanup_report_id} -> {'undone' if undone else 'available'}")

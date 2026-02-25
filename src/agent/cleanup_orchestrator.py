@@ -25,6 +25,7 @@ from .smart_recommender import SmartRecommender, UserProfile, CleanupPlan, Clean
 from core.models import ScanItem
 from core.backup_manager import BackupManager
 from core.cleaner import Cleaner
+from core.restore_manager import RestoreManager
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +188,7 @@ class CleanupOrchestrator:
         self.recommender = SmartRecommender()
         self.backup_manager = BackupManager()
         self.cleaner = Cleaner()
+        self.restore_manager = RestoreManager()
         self.signal = signal
         self._incremental_stats = None  # 缓存增量统计信息
 
@@ -570,6 +572,9 @@ class CleanupOrchestrator:
             with open(history_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
+            # 同步更新 RestoreManager 的撤销历史
+            self._update_restore_history(report)
+
             # 记录增量清理历史到日志
             if report.is_incremental:
                 self._log_incremental_cleanup_history(report)
@@ -607,6 +612,33 @@ class CleanupOrchestrator:
         except Exception as e:
             logger.warning(f"[CleanupOrchestrator] 记录增量清理历史失败: {e}")
 
+    def _update_restore_history(self, report: CleanupReport):
+        """更新 RestoreManager 的撤销历史
 
-# 导入 os 模块
-import os
+        Args:
+            report: 清理报告
+        """
+        try:
+            # 从报告中提取备份信息
+            backup_entries = [
+                d for d in report.details if d.get('type') == 'backup'
+            ]
+
+            if backup_entries:
+                backup_entry = backup_entries[0]
+                backup_id = backup_entry.get('backup_id', '')
+
+                # 添加撤销历史
+                self.restore_manager.add_undo_history(
+                    cleanup_report_id=report.report_id,
+                    backup_id=backup_id,
+                    cleanup_time=report.completed_at or datetime.now()
+                )
+
+                logger.info(
+                    f"[CleanupOrchestrator] 已更新撤销历史: "
+                    f"report_id={report.report_id[:8]}..., backup_id={backup_id[:8]}..."
+                )
+
+        except Exception as e:
+            logger.warning(f"[CleanupOrchestrator] 更新撤销历史失败: {e}")
