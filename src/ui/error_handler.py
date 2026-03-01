@@ -7,8 +7,8 @@ UI 错误处理助手
 from typing import Optional, Callable, Any
 from functools import wraps
 
-from PyQt6.QtWidgets import QWidget, QMessageBox
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QMessageBox
+from PyQt5.QtCore import QObject, pyqtSignal
 
 from qfluentwidgets import InfoBar, InfoBarPosition, MessageBox
 

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 清理报告对话框 (Report Dialog)
 
@@ -12,12 +12,12 @@
 import os
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import (
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QWidget,
     QScrollArea, QFrame, QGridLayout, QSpacerItem, QSizePolicy
 )
-from PyQt6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
+from PyQt5.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
 
 from qfluentwidgets import (
     SubtitleLabel, BodyLabel, StrongBodyLabel, SimpleCardWidget,

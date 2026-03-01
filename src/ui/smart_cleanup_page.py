@@ -1,4 +1,4 @@
-"""
+﻿"""
 智能清理页面 UI - 全新设计
 
 现代化、可视化的智能清理界面：
@@ -40,9 +40,11 @@ from core.smart_cleaner import (
 )
 from core.rule_engine import RiskLevel
 from core.backup_manager import BackupManager, get_backup_manager
-from core.models_smart import BackupType
+from core.models_smart import BackupType, RecoveryRecord
 from core.ai_review_models import AIReviewResult
+from ui.report_dialog import ReportDialog
 from ui.ai_review_widgets import ReviewProgressBar, ReviewSummaryCard, AIReviewCard
+from ui.agent_status_widgets import AgentStatusFrame, AgentStatsWidget
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -686,6 +688,19 @@ class SmartCleanupPage(QWidget):
         title_row.addWidget(self.ai_status_indicator)
         title_row.addStretch()
 
+        # 智能体模式选择 (H-002: 智能体模式切换 UI)
+        mode_label = BodyLabel("扫描模式:")
+        mode_label.setStyleSheet('font-size: 12px; color: #666; margin-right: 4px;')
+        title_row.addWidget(mode_label)
+
+        self.agent_mode_combo = ComboBox()
+        self.agent_mode_combo.addItems(["传统扫描", "混合模式", "智能体模式"])
+        self.agent_mode_combo.setCurrentIndex(self._get_agent_mode_index())
+        self.agent_mode_combo.setFixedWidth(100)
+        self.agent_mode_combo.currentIndexChanged.connect(self._on_agent_mode_changed)
+        title_row.addWidget(self.agent_mode_combo)
+        title_row.addSpacing(16)
+
         # AI 全自动托管开关
         self.ai_switch = SwitchButton()
         self.ai_switch.setChecked(self.config.enable_ai)
@@ -700,6 +715,11 @@ class SmartCleanupPage(QWidget):
         # 阶段指示器
         self.phase_indicator = PhaseIndicator()
         header_layout.addWidget(self.phase_indicator)
+
+        # 智能体状态框架 (H-001: AgentStatusWidget 集成)
+        self.agent_status_frame = AgentStatusFrame()
+        self.agent_status_frame.setVisible(True)  # 始终显示
+        header_layout.addWidget(self.agent_status_frame)
 
         # 进度条
         self.progress_bar = ProgressBar()
@@ -1082,6 +1102,10 @@ class SmartCleanupPage(QWidget):
         if hasattr(self, 'scan_info_card'):
             self.scan_info_card.set_current_path(f"正在扫描: {scan_type_name}", "初始化扫描器...")
 
+        # 清除缓存的扫描类型信息（下次更新时重新计算）
+        if hasattr(self, '_cached_scan_type_info'):
+            del self._cached_scan_type_info
+        
         # 启动实时路径更新定时器（每2秒更新一次）
         if hasattr(self, 'scan_path_timer'):
             self.scan_path_timer.stop()
@@ -1089,8 +1113,14 @@ class SmartCleanupPage(QWidget):
         self.scan_path_timer.timeout.connect(self._update_scan_path)
         self.scan_path_timer.start(2000)
 
-        # 启动扫描
-        self.cleaner.start_scan(scan_type, scan_target)
+        # 启动扫描 - 根据智能体模式选择扫描方法
+        agent_mode = getattr(self.config, 'agent_mode', 'hybrid')
+        if agent_mode == 'disabled':
+            self.logger.info(f"[UI] 使用传统扫描模式")
+            self.cleaner.start_scan(scan_type, scan_target)
+        else:
+            self.logger.info(f"[UI] 使用智能体扫描模式: {agent_mode}")
+            self.cleaner.start_scan_with_agent(scan_type, scan_target)
         self.current_plan = None
 
     def _run_precheck(self) -> bool:
@@ -1171,39 +1201,45 @@ class SmartCleanupPage(QWidget):
         return []
 
     def _update_scan_path(self):
-        """实时更新扫描路径显示"""
+        """实时更新扫描路径显示 - 优化版本
+        
+        优化说明：
+        - 使用缓存的扫描类型，避免重复计算
+        - 减少 UI 更新频率（通过定时器间隔控制）
+        """
         if self.state != 'scanning':
             return
 
         import time
         elapsed = time.time() - self._scan_start_time
-
-        scan_type_map = ["system", "browser", "appdata", "custom"]
-        idx = self.scan_type_combo.currentIndex()
-        scan_types = ["system", "browser", "appdata", "custom"]
-        if idx >= 0 and idx < len(scan_types):
-            scan_type = scan_types[idx]
-
-        # 不同扫描类型的说明
-        type_info = {
-            'system': {
-                'name': '系统垃圾扫描',
-                'items': ['临时文件', '预取缓存', '系统日志', '更新缓存']
-            },
-            'browser': {
-                'name': '浏览器缓存扫描',
-                'items': ['Chrome 缓存', 'Edge 缓存', 'Firefox 缓存']
-            },
-            'appdata': {
-                'name': 'AppData 文件夹扫描',
-                'items': ['Roaming', 'Local', 'LocalLow']
-            },
-            'custom': {
-                'name': '自定义路径扫描',
-                'items': ['自定义路径']
-            }
-        }.get(scan_type, {'name': f'{scan_type} 扫描', 'items': []})
-
+        
+        # 使用缓存的扫描类型（在扫描开始时已设置）
+        if not hasattr(self, '_cached_scan_type_info'):
+            scan_types = ["system", "browser", "appdata", "custom"]
+            idx = self.scan_type_combo.currentIndex()
+            scan_type = scan_types[idx] if 0 <= idx < len(scan_types) else 'system'
+            
+            # 缓存扫描类型信息
+            self._cached_scan_type_info = {
+                'system': {
+                    'name': '系统垃圾扫描',
+                    'items': ['临时文件', '预取缓存', '系统日志', '更新缓存']
+                },
+                'browser': {
+                    'name': '浏览器缓存扫描',
+                    'items': ['Chrome 缓存', 'Edge 缓存', 'Firefox 缓存']
+                },
+                'appdata': {
+                    'name': 'AppData 文件夹扫描',
+                    'items': ['Roaming', 'Local', 'LocalLow']
+                },
+                'custom': {
+                    'name': '自定义路径扫描',
+                    'items': ['自定义路径']
+                }
+            }.get(scan_type, {'name': f'{scan_type} 扫描', 'items': []})
+        
+        type_info = self._cached_scan_type_info
         items = type_info['items']
         current_item_idx = min(int(elapsed / 5) % len(items), len(items) - 1)
         current_item = items[current_item_idx]
@@ -1240,7 +1276,14 @@ class SmartCleanupPage(QWidget):
             return
 
         self.logger.info(f"[UI] 开始清理 {len(selected_items)} 个项目")
-        self.cleaner.execute_cleanup(selected_items)
+        # 根据智能体模式选择执行方法
+        agent_mode = getattr(self.config, 'agent_mode', 'hybrid')
+        if agent_mode == 'disabled':
+            self.logger.info(f"[UI] 使用传统执行模式")
+            self.cleaner.execute_cleanup(selected_items)
+        else:
+            self.logger.info(f"[UI] 使用智能体执行模式: {agent_mode}")
+            self.cleaner.execute_cleanup_with_agent(selected_items)
         self._set_ui_state('executing')
 
     def _on_cancel(self):
@@ -1341,12 +1384,43 @@ class SmartCleanupPage(QWidget):
         self.ai_review_summary.update_summary(status)
 
     def _on_ai_item_completed(self, path: str, result: AIReviewResult):
-        """AI 复核项目完成回调"""
+        """AI 复核项目完成回调 - 优化版本
+        
+        优化说明：
+        - 使用延迟更新机制，避免高频 UI 更新导致卡顿
+        - 收集待更新的项目，批量更新 UI
+        """
         self.ai_review_results[path] = result
         self.logger.debug(f"[UI] AI复核完成: {os.path.basename(path)} -> {result.ai_risk.value}")
-
-        # 更新对应卡片的显示
-        self._update_item_card_ai_result(path, result)
+        
+        # 添加到待更新队列
+        if not hasattr(self, '_pending_ai_updates'):
+            self._pending_ai_updates = {}
+        self._pending_ai_updates[path] = result
+        
+        # 使用节流机制：延迟 100ms 后批量更新
+        # 如果已经有定时器在等待，则重置（防抖）
+        if hasattr(self, '_ai_update_timer') and self._ai_update_timer.isActive():
+            return  # 等待现有定时器触发
+        
+        if not hasattr(self, '_ai_update_timer'):
+            self._ai_update_timer = QTimer()
+            self._ai_update_timer.setSingleShot(True)
+            self._ai_update_timer.timeout.connect(self._flush_ai_updates)
+        
+        self._ai_update_timer.start(100)  # 100ms 防抖延迟
+    
+    def _flush_ai_updates(self):
+        """批量更新 AI 复核结果到 UI"""
+        if not hasattr(self, '_pending_ai_updates') or not self._pending_ai_updates:
+            return
+        
+        # 批量更新
+        updates = self._pending_ai_updates.copy()
+        self._pending_ai_updates.clear()
+        
+        for path, result in updates.items():
+            self._update_item_card_ai_result(path, result)
 
     def _on_ai_item_failed(self, path: str, error: str):
         """AI 复核项目失败回调"""
@@ -1387,8 +1461,8 @@ class SmartCleanupPage(QWidget):
                 else:
                     self.logger.info("[UI] 保守模式：显示确认对话框")
                     QTimer.singleShot(300, self._show_cleanup_confirmation)
-                # 立即处理待处理事件，确保 UI 刷新
-                QCoreApplication.processEvents()
+                # 注意：不再使用 processEvents()，改用 QTimer.singleShot 异步处理
+                # 这样可以避免阻塞主线程，让 Qt 事件循环自然处理 UI 更新
 
             else:
                 # 手动模式：显示完成提示
@@ -1554,6 +1628,42 @@ class SmartCleanupPage(QWidget):
         )
         self._connect_signals()
         self.logger.info(f"[UI] AI托管已{'启用' if enabled else '禁用'}")
+
+    def _get_agent_mode_index(self) -> int:
+        """获取当前智能体模式的索引"""
+        mode = getattr(self.config, 'agent_mode', 'hybrid')
+        mode_map = {'disabled': 0, 'hybrid': 1, 'full': 2}
+        return mode_map.get(mode, 1)
+
+    def _on_agent_mode_changed(self, index: int):
+        """智能体模式切换回调 (H-002)"""
+        mode_map = {0: 'disabled', 1: 'hybrid', 2: 'full'}
+        mode_names = {0: '传统扫描', 1: '混合模式', 2: '智能体模式'}
+        new_mode = mode_map.get(index, 'hybrid')
+
+        self.config.agent_mode = new_mode
+        self.logger.info(f"[UI] 智能体模式切换为: {mode_names[index]}")
+
+        # 重置清理器以应用新配置
+        self.cleaner = get_smart_cleaner(
+            config=self.config,
+            backup_mgr=self.backup_mgr
+        )
+        self._connect_signals()
+
+        # 更新智能体状态框架可见性
+        if new_mode == 'disabled':
+            self.agent_status_frame.setVisible(False)
+        else:
+            self.agent_status_frame.setVisible(True)
+            self.agent_status_frame.set_status("idle")
+
+        # 显示提示
+        InfoBar.success(
+            "模式切换",
+            f"已切换到 {mode_names[index]}",
+            parent=self, position=InfoBarPosition.TOP, duration=2000
+        )
 
     def _update_ui_for_auto_managed(self, auto_managed: bool):
         """根据托管模式更新UI"""
@@ -1900,6 +2010,9 @@ class SmartCleanupPage(QWidget):
             self.ai_review_progress_bar.setVisible(False)
             self.ai_review_summary.setVisible(False)
 
+            # 更新智能体状态框架
+            self.agent_status_frame.set_status("idle")
+
         elif state == 'scanning':
             self.phase_indicator.update_phase(1)
             self.progress_bar.setVisible(True)
@@ -1921,6 +2034,9 @@ class SmartCleanupPage(QWidget):
             # 隐藏 AI 复核组件
             self.ai_review_progress_bar.setVisible(False)
             self.ai_review_summary.setVisible(False)
+
+            # 更新智能体状态框架
+            self.agent_status_frame.set_status("running", stage="扫描", progress=0, details="正在扫描文件系统...")
 
         elif state == 'analyzing':
             self.phase_indicator.update_phase(2)
@@ -1944,6 +2060,9 @@ class SmartCleanupPage(QWidget):
             self.ai_review_progress_bar.setVisible(False)
             self.ai_review_summary.setVisible(False)
 
+            # 更新智能体状态框架
+            self.agent_status_frame.set_status("running", stage="分析", progress=50, details="智能体正在评估清理风险...")
+
         elif state == 'preview':
             self.phase_indicator.update_phase(3)
             self.progress_bar.setVisible(False)
@@ -1962,6 +2081,10 @@ class SmartCleanupPage(QWidget):
             # 保持 AI 复核组件状态（可能在复核中）
             # 不强制隐藏，让状态保持不变
 
+            # 更新智能体状态框架
+            item_count = len(self.current_plan.items) if self.current_plan else 0
+            self.agent_status_frame.set_status("running", stage="待确认", progress=75, details=f"发现 {item_count} 个可清理项，等待用户确认")
+
         elif state == 'executing':
             self.phase_indicator.update_phase(4)
             self.progress_bar.setVisible(True)
@@ -1977,6 +2100,9 @@ class SmartCleanupPage(QWidget):
             # 隐藏 AI 复核组件
             self.ai_review_progress_bar.setVisible(False)
             self.ai_review_summary.setVisible(False)
+
+            # 更新智能体状态框架
+            self.agent_status_frame.set_status("running", stage="清理", progress=80, details="正在执行清理操作...")
 
         elif state == 'completed':
             self.phase_indicator.update_phase(5)
@@ -1997,6 +2123,15 @@ class SmartCleanupPage(QWidget):
             self.ai_review_progress_bar.setVisible(False)
             self.ai_review_summary.setVisible(False)
 
+            # 更新智能体状态框架
+            if hasattr(self, '_last_execution_result') and self._last_execution_result:
+                result = self._last_execution_result
+                self.agent_status_frame.set_status("completed",
+                    summary="清理完成",
+                    details=f"成功: {result.success_items} | 释放: {self._format_size(result.freed_size)}")
+            else:
+                self.agent_status_frame.set_status("completed", summary="清理完成", details="操作已完成")
+
         elif state == 'error':
             self.phase_indicator.update_phase(0)
             self.progress_bar.setVisible(False)
@@ -2010,24 +2145,73 @@ class SmartCleanupPage(QWidget):
             # 显示 AI 复核组件（可能正在复核中）
             # 不强制隐藏，让状态保持不变
 
+            # 更新智能体状态框架
+            self.agent_status_frame.set_status("error", error="操作失败，请重试")
+
     def _load_items_from_plan(self, plan: CleanupPlan):
-        """从清理计划加载项目"""
+        """从清理计划加载项目 - 增量加载优化版本
+        
+        优化说明：
+        - 分批加载项目，每批 20 个，避免一次性创建大量 UI 组件导致主线程阻塞
+        - 使用 QTimer.singleShot 实现异步分批加载，确保 UI 响应性
+        - 加载过程中显示进度提示
+        """
         try:
             self._clear_items()
-
-            for item in plan.items:
-                # 获取 AI 复核结果（如果有）
-                ai_result = self.ai_review_results.get(item.path) if hasattr(self, 'ai_review_results') else None
-                card = CleanupItemCard(item, ai_review_result=ai_result)
-                self.items_layout.insertWidget(self.items_layout.count() - 1, card)
-                self.item_cards.append((card, item))
-
-                # 默认不选任何项目
-                card.checkbox.setChecked(False)
-
-            self._update_items_count()
+            
+            if not plan.items:
+                self._update_items_count()
+                return
+            
+            # 保存待加载的项目列表
+            self._pending_items = list(plan.items)
+            self._batch_size = 20  # 每批加载数量
+            self._load_index = 0
+            
+            # 显示加载提示
+            self.items_count_label.setText(f"正在加载项目 0/{len(plan.items)}...")
+            
+            # 开始分批加载
+            self._load_next_batch()
+            
         except Exception as e:
             self.logger.error(f"[UI] 加载项目失败: {e}")
+    
+    def _load_next_batch(self):
+        """加载下一批项目"""
+        if not hasattr(self, '_pending_items') or not self._pending_items:
+            self._update_items_count()
+            return
+        
+        # 获取当前批次
+        start_idx = self._load_index
+        end_idx = min(start_idx + self._batch_size, len(self._pending_items))
+        batch = self._pending_items[start_idx:end_idx]
+        
+        for item in batch:
+            # 获取 AI 复核结果（如果有）
+            ai_result = self.ai_review_results.get(item.path) if hasattr(self, 'ai_review_results') else None
+            card = CleanupItemCard(item, ai_review_result=ai_result)
+            self.items_layout.insertWidget(self.items_layout.count() - 1, card)
+            self.item_cards.append((card, item))
+            
+            # 默认不选任何项目
+            card.checkbox.setChecked(False)
+        
+        self._load_index = end_idx
+        
+        # 更新加载进度
+        self.items_count_label.setText(f"正在加载项目 {end_idx}/{len(self._pending_items)}...")
+        
+        # 检查是否还有剩余项目
+        if end_idx < len(self._pending_items):
+            # 使用 QTimer.singleShot 异步加载下一批，让 UI 有机会更新
+            QTimer.singleShot(10, self._load_next_batch)
+        else:
+            # 加载完成
+            self._pending_items = None
+            self._load_index = 0
+            self._update_items_count()
 
     def _update_stats_from_plan(self, plan: CleanupPlan):
         """从清理计划更新统计"""
@@ -2165,3 +2349,4 @@ class CleanupReportDialog(QDialog):
         close_btn = PrimaryPushButton("关闭")
         close_btn.clicked.connect(self.accept)
         layout.addWidget(close_btn, 0, Qt.AlignCenter)
+
