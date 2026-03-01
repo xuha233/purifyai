@@ -1,0 +1,72 @@
+﻿# PurifyAI - AOP Configuration
+# 此配置文件用于 AOP (Agent Orchestration Platform) 集成
+
+# Provider 配置 - 支持多个 AI Provider
+providers:
+  - claude
+  - codex
+  - qwen
+
+# 默认配置
+defaults:
+  timeout: 300
+  format: report
+  language: zh-CN
+
+# 路径配置
+paths:
+  repo: .
+  runs: runs/
+  hypotheses: runs/hypotheses.md
+
+# 项目特定配置
+project:
+  name: PurifyAI
+  type: desktop-app
+  description: AI-powered disk cleanup tool
+
+  # 智能体配置
+  agents:
+    - id: scan
+      name: Scanner Agent
+      role: 扫描磁盘，识别可清理项目
+      tools: [file_tools, system_tools]
+    
+    - id: review
+      name: Reviewer Agent
+      role: 审查扫描结果，评估风险
+      tools: [safety_tools, risk_tools]
+    
+    - id: cleanup
+      name: Cleanup Agent
+      role: 执行清理操作
+      tools: [file_tools, trash_tools]
+    
+    - id: report
+      name: Reporter Agent
+      role: 生成清理报告
+      tools: [report_tools]
+
+# 假设驱动开发配置
+hypothesis:
+  auto_create: true
+  phases:
+    - explore
+    - build
+    - validate
+    - learn
+  
+  # 默认假设模板
+  templates:
+    quick_win: "快速验证，低成本高收益"
+    experiment: "实验性假设，需要验证"
+    strategic: "战略性假设，长期投入"
+
+# 学习捕获配置
+learning:
+  auto_capture: true
+  categories:
+    - what_worked
+    - what_failed
+    - insights
+    - next_steps

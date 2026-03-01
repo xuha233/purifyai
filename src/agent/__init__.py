@@ -168,3 +168,15 @@ def __getattr__(name: str):
         module = import_module(f".{module_name}", package=__name__)
         return getattr(module, attr_name)
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+# AOP 集成
+from .aop_integration import AOPIntegration, AOPStatus, get_aop, is_aop_available
+
+# Update __all__ with AOP exports
+__all__.extend([
+    "AOPIntegration",
+    "AOPStatus", 
+    "get_aop",
+    "is_aop_available",
+])
