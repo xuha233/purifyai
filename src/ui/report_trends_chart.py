@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 报告趋势图组件 (Report Trends Chart)
 
@@ -512,3 +512,4 @@ class ReportTrendsCard(SimpleCardWidget):
 def get_report_trends_card() -> ReportTrendsCard:
     """获取趋势卡片实例"""
     return ReportTrendsCard()
+
