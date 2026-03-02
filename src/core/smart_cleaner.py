@@ -780,15 +780,19 @@ class SmartCleaner(QObject):
         return True
 
     def cancel(self):
-        """取消当前操作"""
+        """取消当前操作 - 异步，不阻塞 UI"""
         if self.scan_thread and self.scan_thread.isRunning():
-            self.logger.info("[SMART_CLEAN] 取消扫描")
+            self.logger.info("[SMART_CLEAN] 请求取消扫描")
             self.scan_thread.cancel()
-            self.scan_thread.wait(5000)
+            # 不等待线程结束，让线程自己完成后发送信号
+            # 避免阻塞 UI 线程
 
         if not self.executor.is_idle():
             self.logger.info("[SMART_CLEAN] 取消执行")
             self.executor.cancel_execution()
+        
+        # 重置状态
+        self._set_phase(SmartCleanPhase.IDLE)
 
     def get_current_phase(self) -> SmartCleanPhase:
         """获取当前阶段
@@ -1151,8 +1155,8 @@ class SmartCleaner(QObject):
             return
 
         try:
-            # 尝试导入智能体模块
-            from ..agent import get_orchestrator
+            # 尝试导入智能体模块（使用绝对导入）
+            from agent import get_orchestrator
             self.logger.info(f"[SMART_CLEAN] 智能体系统: {self.agent_mode.value} 模式可用")
         except ImportError as e:
             self.logger.warning(f"[SMART_CLEAN] 智能体系统不可用: {e}")
