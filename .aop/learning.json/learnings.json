@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "saved_at": "2026-03-02T15:34:01.215748+00:00",
+    "version": 1
+  },
+  "data": {
+    "records": [
+      {
+        "phase": "scan",
+        "what_worked": [
+          "QThread 后台线程"
+        ],
+        "what_failed": [],
+        "insights": [
+          "避免 wait() 阻塞"
+        ]
+      }
+    ]
+  }
+}

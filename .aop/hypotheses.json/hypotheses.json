@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "saved_at": "2026-03-03T14:17:40.992829+00:00",
+    "version": 1
+  },
+  "data": {
+    "H-D5BFC589": {
+      "hypothesis_id": "H-D5BFC589",
+      "statement": "学习功能测试 - 验证 learning capture 命令",
+      "validation_method": "",
+      "success_criteria": [],
+      "state": "validated",
+      "priority": "quick_win",
+      "findings": []
+    },
+    "H-FB4643F3": {
+      "hypothesis_id": "H-FB4643F3",
+      "statement": "UI Integration - 集成智能体控制面板到主界面",
+      "validation_method": "",
+      "success_criteria": [],
+      "state": "validated",
+      "priority": "quick_win",
+      "findings": []
+    },
+    "H-1347F1C3": {
+      "hypothesis_id": "H-1347F1C3",
+      "statement": "单元测试 - 覆盖 4 个智能体的核心功能",
+      "validation_method": "",
+      "success_criteria": [],
+      "state": "validated",
+      "priority": "quick_win",
+      "findings": []
+    },
+    "H-7B54F8B4": {
+      "hypothesis_id": "H-7B54F8B4",
+      "statement": "集成测试 - 验证 UI 与智能体系统的交互",
+      "validation_method": "",
+      "success_criteria": [],
+      "state": "pending",
+      "priority": "deep_dive",
+      "findings": []
+    },
+    "H-994B5290": {
+      "hypothesis_id": "H-994B5290",
+      "statement": "智能体工作流集成 - 验证 UI 与 4 个智能体的完整交互流程",
+      "validation_method": "",
+      "success_criteria": [],
+      "state": "validated",
+      "priority": "deep_dive",
+      "findings": [
+        "15 个集成测试全部通过",
+        "端到端工作流验证成功",
+        "UI 与智能体交互正常",
+        "创建了 tests/test_agent_workflow_integration.py"
+      ]
+    }
+  }
+}

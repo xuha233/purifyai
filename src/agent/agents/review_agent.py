@@ -34,8 +34,8 @@ class ReviewAgent:
 
         # 危险关键词
         self.dangerous_paths = [
-            r"C:\\Windows", r"C:\\Program Files", r"C:\\ProgramData",
-            r"/windows/", r"/system/", r"/program/", r"/program files", r"/programdata"
+            "C:\\Windows", "C:\\Program Files", "C:\\ProgramData",
+            "/windows/", "/system/", "/program/", "/program files", "/programdata"
         ]
 
         self.user_paths = [

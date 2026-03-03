@@ -7,6 +7,7 @@
 import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from pathlib import Path
 
 from ..orchestrator import AgentOrchestrator, AgentType
 from utils.logger import get_logger
@@ -304,26 +305,26 @@ class ReportAgent:
         """
         lines = []
 
-        lines.append("# 清理操作报告\n")
+        lines.append("# 清理操作报告")
 
         # 摘要
         summary = report.get("summary", {})
-        lines.append("## 执行摘要\n")
+        lines.append("## 执行摘要")
         lines.append(f"- 扫描类型: **{summary.get('scan_type', 'unknown')}**")
         lines.append(f"- 总扫描数: **{summary.get('total_scanned', 0)}**")
         lines.append(f"- 计划清理: **{summary.get('total_planned', 0)}**")
         lines.append(f"- 实际清理: **{summary.get('deleted_count', 0)}**")
         lines.append(f"- 失败项: **{summary.get('failed_count', 0)}**")
         lines.append(f"- 成功率: **{summary.get('success_rate', 0)}%**")
-        lines.append(f"- 释放空间: **{self._format_bytes(summary.get('total_freed_bytes', 0))}**\n")
+        lines.append(f"- 释放空间: **{self._format_bytes(summary.get('total_freed_bytes', 0))}**")
 
         # 统计
         stats = report.get("statistics", {})
-        lines.append("## 统计信息\n")
+        lines.append("## 统计信息")
 
         type_stats = stats.get("files_by_type", {})
         if type_stats:
-            lines.append("### 按类型统计\n")
+            lines.append("### 按类型统计")
             lines.append("| 类型 | 数量 |")
             lines.append("|------|------|")
             for category, count in type_stats.items():
@@ -333,12 +334,12 @@ class ReportAgent:
         # 失败分析
         failures = report.get("failures", {})
         if failures.get("total_failures", 0) > 0:
-            lines.append("## 失败分析\n")
-            lines.append(f"总失败数: **{failures['total_failures']}**\n")
+            lines.append("## 失败分析")
+            lines.append(f"总失败数: **{failures['total_failures']}**")
 
             error_types = failures.get("error_types", {})
             if error_types:
-                lines.append("### 错误类型分布\n")
+                lines.append("### 错误类型分布")
                 lines.append("| 错误类型 | 数量 |")
                 lines.append("|---------|------|")
                 for error_type, count in error_types.items():
@@ -347,7 +348,7 @@ class ReportAgent:
 
             top_failures = failures.get("top_failures", [])
             if top_failures:
-                lines.append("### 前 10 个失败项\n")
+                lines.append("### 前 10 个失败项")
                 lines.append("| 路径 | 错误 |")
                 lines.append("|------|------|")
                 for fail in top_failures[:10]:
@@ -357,13 +358,13 @@ class ReportAgent:
         # 建议
         recommendations = report.get("recommendations", [])
         if recommendations:
-            lines.append("## 优化建议\n")
+            lines.append("## 优化建议")
             for i, rec in enumerate(recommendations, 1):
                 lines.append(f"{i}. {rec}")
             lines.append("")
 
         # 元数据
-        lines.append("---\n")
-        lines.append(f"生成时间: {report.get('generated_at', '')}\n")
+        lines.append("---")
+        lines.append(f"生成时间: {report.get('generated_at', '')}")
 
-        return "\n".join(lines)
+        return "".join(lines)
